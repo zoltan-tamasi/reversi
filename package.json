@@ -1,0 +1,23 @@
+{
+  "name": "reversi",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A React + Node.js reversi/othello game with a GraphQL API",
+  "workspaces": [
+    "src/server",
+    "src/client"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=src/server & npm run dev --workspace=src/client",
+    "dev:server": "npm run dev --workspace=src/server",
+    "dev:client": "npm run dev --workspace=src/client",
+    "build": "npm run build --workspace=src/server && npm run build --workspace=src/client",
+    "typecheck": "npm run typecheck --workspace=src/server",
+    "start": "npm run start --workspace=src/server",
+    "test": "npm run test --workspace=src/server"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
