@@ -4,7 +4,7 @@ export const EMPTY = 'EMPTY' as const;
 export const BLACK = 'BLACK' as const;
 export const WHITE = 'WHITE' as const;
 
-export type cellContent = typeof EMPTY | typeof BLACK | typeof WHITE;
+export type CellContent = typeof EMPTY | typeof BLACK | typeof WHITE;
 export type Player = typeof BLACK | typeof WHITE;
 
 export type Position = { row: number; col: number };
@@ -12,18 +12,42 @@ export type PositionWithFlips = { row: number; col: number; flips: Position[] };
 
 const SIZE = 8 as const;
 
-export type Board = Array<Array<cellContent>>;
+export type Board = Array<Array<CellContent>>;
 
-// The eight directions a line of pieces can be flanked along.
+export type Game = {
+  id: string;
+  status: 'WAITING_FOR_PLAYERS' | 'IN_PROGRESS' | 'FINISHED';
+  board: Board;
+  blackPlayer: string;  // user ID of the player controlling black
+  whitePlayer: string;  // user ID of the player controlling white
+  playerToTakeNextMove: Player;
+  winner?: Player;
+};
+
+export type User = {
+  id: string;
+  name: string;
+}
+
 const DIRECTIONS = [
   [-1, -1], [-1, 0], [-1, 1],
   [0, -1], [0, 1],
   [1, -1], [1, 0], [1, 1]
 ];
 
-// Build the standard starting position with the four center discs placed.
-export function createBoard(): cellContent[][] {
-  const board = Array.from({ length: 8 }, () => Array<cellContent>(8).fill(EMPTY as cellContent));
+export const createNewGame = (): Game => {
+  return {
+    id: crypto.randomUUID(),
+    status: 'WAITING_FOR_PLAYERS',
+    board: createBoard(),
+    blackPlayer: '',
+    whitePlayer: '',
+    playerToTakeNextMove: BLACK
+  };
+}
+
+export const createBoard = (): Board => {
+  const board = Array.from({ length: 8 }, () => Array<CellContent>(8).fill(EMPTY as CellContent));
   board[3][3] = WHITE;
   board[3][4] = BLACK;
   board[4][3] = BLACK;
@@ -31,9 +55,9 @@ export function createBoard(): cellContent[][] {
   return board;
 }
 
-export function opponent(player: Player): Player {
+export const opponent = (player: Player): Player => {
   return player === BLACK ? WHITE : BLACK;
-}
+};
 
 function inBounds(row: number, col: number): boolean {
   return row >= 0 && row < SIZE && col >= 0 && col < SIZE;
@@ -111,7 +135,7 @@ export function applyMove(board: Board, row: number, col: number, player: Player
   if (flips.length === 0) {
     throw new Error(`Illegal move at (${row}, ${col}) for ${player}`);
   }
-  const next = board.map((line: cellContent[]) => line.slice());
+  const next = board.map((line: CellContent[]) => line.slice());
   next[row][col] = player;
   for (const { row: r, col: c } of flips) {
     next[r][c] = player;
@@ -129,14 +153,6 @@ export function scores(board: Board) {
     }
   }
   return { black, white };
-}
-
-// The game is over when neither player has a legal move.
-export function isFinished(board: Board) {
-  return (
-    legalMoves(board, BLACK).length === 0 &&
-    legalMoves(board, WHITE).length === 0
-  );
 }
 
 export function winner(board: Board): Player | typeof EMPTY {

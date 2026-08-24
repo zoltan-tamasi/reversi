@@ -9,13 +9,7 @@ import {
   legalMoves,
   opponent
 } from './game/reversi.js';
-import type { Board, Player } from './game/reversi.js';
-
-export interface Game {
-  id: string;
-  board: Board;
-  currentPlayer: Player;
-}
+import type { Game } from './game/reversi.js';
 
 const games = new Map<string, Game>();
 
@@ -23,7 +17,10 @@ export function createGame(): Game {
   const game: Game = {
     id: randomUUID(),
     board: createBoard(),
-    currentPlayer: BLACK // black always moves first
+    blackPlayer: '',
+    whitePlayer: '',
+    playerToTakeNextMove: BLACK,
+    status: 'WAITING_FOR_PLAYERS'
   };
   games.set(game.id, game);
   return game;
@@ -35,14 +32,14 @@ export function getGame(id: string): Game | null {
 
 export function makeMove(id: string, row: number, col: number): Game {
   const game = requireGame(id);
-  game.board = applyMove(game.board, row, col, game.currentPlayer);
+  game.board = applyMove(game.board, row, col, game.playerToTakeNextMove);
   advanceTurn(game);
   return game;
 }
 
 export function passMove(id: string): Game {
   const game = requireGame(id);
-  if (legalMoves(game.board, game.currentPlayer).length > 0) {
+  if (legalMoves(game.board, game.playerToTakeNextMove).length > 0) {
     throw new Error('Cannot pass while a legal move is available');
   }
   advanceTurn(game);
@@ -57,12 +54,9 @@ function requireGame(id: string): Game {
   return game;
 }
 
-// Hand the turn to the opponent, but skip them if they have no legal move.
 function advanceTurn(game: Game): void {
-  const next = opponent(game.currentPlayer);
+  const next = opponent(game.playerToTakeNextMove);
   if (legalMoves(game.board, next).length > 0) {
-    game.currentPlayer = next;
+    game.playerToTakeNextMove = next;
   }
-  // If the opponent has no move, the turn stays with the current player.
-  // If neither has a move the game is finished (reported by the resolvers).
 }

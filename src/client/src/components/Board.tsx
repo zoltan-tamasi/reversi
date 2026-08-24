@@ -1,9 +1,15 @@
-import Cell from './Cell.jsx';
+import type { Game } from '../graphql';
+import Cell from './Cell';
 
-export default function Board({ game, onPlay }) {
+type BoardProps = {
+  game: Game | null;
+  onPlay: (row: number, col: number) => void;
+};
+
+export default function Board({ game, onPlay }: BoardProps) {
   if (!game) return null;
 
-  const legal = new Set(game.legalMoves.map((m) => `${m.row},${m.col}`));
+  const legal = new Set(game.legalMoves.map((move) => `${move.row},${move.col}`));
 
   return (
     <div className="board" role="grid" aria-label="Reversi board">

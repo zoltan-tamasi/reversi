@@ -1,7 +1,15 @@
-export default function GameInfo({ game, onNewGame, onPass }) {
+import type { Disc, Game } from '../graphql';
+
+type GameInfoProps = {
+  game: Game | null;
+  onNewGame: () => void;
+  onPass: () => void;
+};
+
+export default function GameInfo({ game, onNewGame, onPass }: GameInfoProps) {
   if (!game) return null;
 
-  const { scores, currentPlayer, status, winner, legalMoves } = game;
+  const { scores, playerToTakeNextMove, status, winner, legalMoves } = game;
   const finished = status === 'FINISHED';
   const canPass = !finished && legalMoves.length === 0;
 
@@ -16,12 +24,15 @@ export default function GameInfo({ game, onNewGame, onPass }) {
         </span>
       </div>
 
+      {status === 'WAITING_FOR_PLAYERS' && <p>Waiting for players…</p>}
       <p className="status">
         {finished
           ? winner === 'EMPTY'
             ? "It's a draw!"
-            : `${label(winner)} wins!`
-          : `${label(currentPlayer)} to move`}
+            : winner
+              ? `${label(winner)} wins!`
+              : 'Game ended.'
+          : `${label(playerToTakeNextMove)} to move`}
       </p>
 
       <div className="actions">
@@ -38,6 +49,6 @@ export default function GameInfo({ game, onNewGame, onPass }) {
   );
 }
 
-function label(disc) {
+function label(disc: Disc): string {
   return disc === 'BLACK' ? 'Black' : 'White';
 }

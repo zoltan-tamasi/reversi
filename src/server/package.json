@@ -9,7 +9,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "start": "node dist/index.js",
-    "test": "node --import tsx --test src/game/*.test.ts"
+    "test": "node --import tsx --test src/game/reversi.test.ts",
+    "test:all": "node --import tsx --test src/game/reversi.test.ts"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",

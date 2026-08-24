@@ -1,11 +1,38 @@
 import { gql } from '@apollo/client';
 
+export type Disc = 'EMPTY' | 'BLACK' | 'WHITE';
+export type GameStatus = 'WAITING_FOR_PLAYERS' | 'IN_PROGRESS' | 'FINISHED';
+
+export type Move = {
+  row: number;
+  col: number;
+};
+
+export type Score = {
+  black: number;
+  white: number;
+};
+
+export type Game = {
+  id: string;
+  board: Disc[][];
+  playerToTakeNextMove: Disc;
+  blackPlayer: string;
+  whitePlayer: string;
+  legalMoves: Move[];
+  scores: Score;
+  status: GameStatus;
+  winner: Disc | null;
+};
+
 // Shared fragment so every query/mutation returns a consistent game shape.
 export const GAME_FIELDS = gql`
   fragment GameFields on Game {
     id
     board
-    currentPlayer
+    playerToTakeNextMove
+    blackPlayer
+    whitePlayer
     legalMoves {
       row
       col
@@ -31,10 +58,18 @@ export const GET_GAME = gql`
 export const NEW_GAME = gql`
   mutation NewGame {
     newGame {
-      ...GameFields
+      id
     }
   }
-  ${GAME_FIELDS}
+`;
+
+export const REGISTER_PLAYER = gql`
+  mutation RegisterPlayer($name: String!) {
+    registerPlayer(name: $name) {
+      id
+      name
+    }
+  }
 `;
 
 export const MAKE_MOVE = gql`

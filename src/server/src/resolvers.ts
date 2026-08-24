@@ -1,6 +1,6 @@
-import { isFinished, legalMoves, scores, winner } from './game/reversi.js';
+import { legalMoves, scores } from './game/reversi.js';
+import type { Game } from './game/reversi.js';
 import * as store from './gameStore.js';
-import type { Game } from './gameStore.js';
 
 export const resolvers = {
   Query: {
@@ -18,9 +18,12 @@ export const resolvers = {
   },
 
   Game: {
-    legalMoves: (game: Game) => legalMoves(game.board, game.currentPlayer),
+    playerToTakeNextMove: (game: Game) => game.playerToTakeNextMove,
+    blackPlayer: (game: Game) => game.blackPlayer,
+    whitePlayer: (game: Game) => game.whitePlayer,
+    legalMoves: (game: Game) => legalMoves(game.board, game.playerToTakeNextMove),
     scores: (game: Game) => scores(game.board),
-    status: (game: Game) => (isFinished(game.board) ? 'FINISHED' : 'IN_PROGRESS'),
-    winner: (game: Game) => (isFinished(game.board) ? winner(game.board) : null)
+    status: (game: Game) => (game.status),
+    winner: (game: Game) => (game.status === 'FINISHED' ? game.winner : null)
   }
 };

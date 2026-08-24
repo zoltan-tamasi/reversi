@@ -1,4 +1,12 @@
-export default function Cell({ disc, playable, onPlay }) {
+import type { Disc } from '../graphql';
+
+type CellProps = {
+  disc: Disc;
+  playable: boolean;
+  onPlay: () => void;
+};
+
+export default function Cell({ disc, playable, onPlay }: CellProps) {
   const hasDisc = disc === 'BLACK' || disc === 'WHITE';
 
   return (

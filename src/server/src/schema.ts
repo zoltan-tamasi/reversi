@@ -7,6 +7,7 @@ export const typeDefs = `#graphql
   }
 
   enum GameStatus {
+    WAITING_FOR_PLAYERS
     IN_PROGRESS
     FINISHED
   }
@@ -24,11 +25,18 @@ export const typeDefs = `#graphql
   type Game {
     id: ID!
     board: [[Disc!]!]!
-    currentPlayer: Disc!
+    playerToTakeNextMove: Disc!
+    blackPlayer: String!
+    whitePlayer: String!
     legalMoves: [Move!]!
     scores: Score!
     status: GameStatus!
     winner: Disc
+  }
+
+  type Player {
+    id: ID!
+    name: String! 
   }
 
   type Query {
@@ -39,5 +47,6 @@ export const typeDefs = `#graphql
     newGame: Game!
     makeMove(gameId: ID!, row: Int!, col: Int!): Game!
     passMove(gameId: ID!): Game!
+    registerPlayer(name: String!): Player!
   }
 `;
