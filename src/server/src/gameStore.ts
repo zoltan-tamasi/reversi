@@ -11,7 +11,27 @@ import {
 } from './game/reversi.js';
 import type { Game } from './game/reversi.js';
 
+export type Player = {
+  id: string;
+  name: string;
+}
+
+const players = new Map<string, Player>();
 const games = new Map<string, Game>();
+
+export function registerPlayer(name: string): Player {
+  const player: Player = {
+    id: randomUUID(),
+    name
+  };
+
+  players.set(player.id, player);
+  return player;
+}
+
+export function getPlayer(id: string): Player | null {
+  return players.get(id) ?? null;
+}
 
 export function createGame(): Game {
   const game: Game = {
@@ -60,3 +80,4 @@ function advanceTurn(game: Game): void {
     game.playerToTakeNextMove = next;
   }
 }
+
