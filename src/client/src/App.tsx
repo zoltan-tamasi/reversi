@@ -21,7 +21,7 @@ export default function App() {
   const [passMove] = useMutation<{ passMove: Game }>(PASS_MOVE);
 
   useEffect(() => {
-    newGame();
+    newGame({ variables: { userId: 'some-user-id' } });
   }, [newGame]);
 
   const game = data?.game ?? null;

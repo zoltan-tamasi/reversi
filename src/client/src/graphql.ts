@@ -56,8 +56,8 @@ export const GET_GAME = gql`
 `;
 
 export const NEW_GAME = gql`
-  mutation NewGame {
-    newGame {
+  mutation NewGame($userId: String!) {
+    newGame(userId: $userId) {
       id
     }
   }

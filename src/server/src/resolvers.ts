@@ -8,7 +8,7 @@ export const resolvers = {
   },
 
   Mutation: {
-    newGame: () => store.createGame(),
+    newGame: (_parent: unknown, { userId }: { userId: string }) => store.createGame(userId),
     makeMove: (
       _parent: unknown,
       { gameId, row, col }: { gameId: string; row: number; col: number }

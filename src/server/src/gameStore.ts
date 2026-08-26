@@ -13,11 +13,11 @@ import type { Game } from './game/reversi.js';
 
 const games = new Map<string, Game>();
 
-export function createGame(): Game {
+export function createGame(userId: string): Game {
   const game: Game = {
     id: randomUUID(),
     board: createBoard(),
-    blackPlayer: '',
+    blackPlayer: userId,
     whitePlayer: '',
     playerToTakeNextMove: BLACK,
     status: 'WAITING_FOR_PLAYERS'
