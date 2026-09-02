@@ -43,11 +43,11 @@ export default function App() {
   const [makeMove] = useMutation<{ makeMove: Game }>(MAKE_MOVE);
   const [passMove] = useMutation<{ passMove: Game }>(PASS_MOVE);
 
-  /*useEffect(() => {
-    if (uiStatus === 'NOT_STARTED' && !gameId) {
-      void newGame();
+    useEffect(() => {
+      if (uiStatus === 'NOT_STARTED' && !gameId) {
+        newGame({ variables: { userId: 'some-user-id' } });
     }
-  }, [gameId, newGame, uiStatus]);*/
+  }, [newGame]);
 
   const game = data?.game ?? null;
 

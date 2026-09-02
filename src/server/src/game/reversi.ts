@@ -35,17 +35,6 @@ const DIRECTIONS = [
   [1, -1], [1, 0], [1, 1]
 ];
 
-export const createNewGame = (): Game => {
-  return {
-    id: crypto.randomUUID(),
-    status: 'WAITING_FOR_PLAYERS',
-    board: createBoard(),
-    blackPlayer: '',
-    whitePlayer: '',
-    playerToTakeNextMove: BLACK
-  };
-}
-
 export const createBoard = (): Board => {
   const board = Array.from({ length: 8 }, () => Array<CellContent>(8).fill(EMPTY as CellContent));
   board[3][3] = WHITE;
