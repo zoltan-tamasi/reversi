@@ -89,3 +89,13 @@ export const PASS_MOVE = gql`
   }
   ${GAME_FIELDS}
 `;
+
+export const JOIN_GAME = gql`
+  mutation JoinGame($gameId: ID!, $playerId: ID!) {
+    joinGame(gameId: $gameId, playerId: $playerId) {
+      ...GameFields
+    } 
+  }
+  ${GAME_FIELDS}
+`;
+

@@ -17,8 +17,31 @@ export const resolvers = {
       _parent: unknown,
       { gameId, row, col }: { gameId: string; row: number; col: number }
     ) => store.makeMove(gameId, row, col),
+    
     passMove: (_parent: unknown, { gameId }: { gameId: string }) =>
-      store.passMove(gameId)
+      store.passMove(gameId),
+
+    joinGame: (_parent: unknown, { gameId, playerId }: { gameId: string; playerId: string }) => {
+      const game = store.getGame(gameId);
+      if (!game) {
+        throw new Error(`Game with ID ${gameId} not found`);
+      }
+      game.whitePlayer = playerId;
+      game.status = 'IN_PROGRESS';
+      return game;
+    }
+  },
+
+  Subscription: {
+    joinGame: {
+      subscribe: (_parent: unknown, { gameId }: { gameId: string }, { pubsub }: { pubsub: any }) => {
+        const game = store.getGame(gameId);
+        if (!game) {
+          throw new Error(`Game with ID ${gameId} not found`);
+        }
+        return pubsub.asyncIterator(`JOIN_GAME_${gameId}`);
+      }
+    }
   },
 
   Game: {

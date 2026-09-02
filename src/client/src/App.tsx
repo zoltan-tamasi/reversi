@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation, useQuery, useSubscription } from '@apollo/client';
 import { useEffect, useState } from 'react';
 
 import Board from './components/Board';
@@ -9,6 +9,7 @@ import {
   NEW_GAME,
   PASS_MOVE,
   REGISTER_PLAYER,
+  JOIN_GAME,
   type Game
 } from './graphql';
 
@@ -42,6 +43,12 @@ export default function App() {
 
   const [makeMove] = useMutation<{ makeMove: Game }>(MAKE_MOVE);
   const [passMove] = useMutation<{ passMove: Game }>(PASS_MOVE);
+  const [accumulatedData, setAccumulatedData] = useState([]);
+  const { data: data2, error, loading } = useSubscription(JOIN_GAME, {
+      onData({ data: data2 }) {
+        console.log(data2)
+      },
+    });
 
     useEffect(() => {
       if (uiStatus === 'NOT_STARTED' && !gameId) {
@@ -73,7 +80,8 @@ export default function App() {
   }
 
   const joinGame = (id: string | null) => {
-    if (!gameId) {
+    if (!gameToJoinId) {
+      console.log('No game ID provided for joining a game.');
       return;
     } 
   }
@@ -107,6 +115,7 @@ export default function App() {
             <input
               type="text"
               onChange={(event) => {
+                console.log('Game ID to join:', event.target.value);
                 setGameToJoinId(event.target.value);
               }}
             />
