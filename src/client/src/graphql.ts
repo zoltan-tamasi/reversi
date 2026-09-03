@@ -61,7 +61,7 @@ export const GET_GAME = gql`
 `;
 
 export const NEW_GAME = gql`
-  mutation NewGame($userId: String!) {
+  mutation NewGame($userId: ID!) {
     newGame(userId: $userId) {
       id
     }
@@ -69,7 +69,7 @@ export const NEW_GAME = gql`
 `;
 
 export const REGISTER_PLAYER = gql`
-  mutation RegisterPlayer($name: String!): Player {
+  mutation RegisterPlayer($name: String!) {
     registerPlayer(name: $name) {
       id
       name
@@ -96,7 +96,7 @@ export const PASS_MOVE = gql`
 `;
 
 export const JOIN_GAME = gql`
-  mutation JoinGame($gameId: ID!, $playerId: ID!) {
+  subscription JoinGame($gameId: ID!, $playerId: ID!) {
     joinGame(gameId: $gameId, playerId: $playerId) {
       ...GameFields
     } 

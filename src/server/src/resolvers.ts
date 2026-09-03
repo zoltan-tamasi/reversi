@@ -20,22 +20,12 @@ export const resolvers = {
     ) => store.makeMove(gameId, row, col),
     
     passMove: (_parent: unknown, { gameId }: { gameId: string }) =>
-      store.passMove(gameId),
-
-    joinGame: (_parent: unknown, { gameId, playerId }: { gameId: string; playerId: string }) => {
-      const game = store.getGame(gameId);
-      if (!game) {
-        throw new Error(`Game with ID ${gameId} not found`);
-      }
-      game.whitePlayer = playerId;
-      game.status = 'IN_PROGRESS';
-      return game;
-    }
+      store.passMove(gameId)
   },
 
   Subscription: {
     joinGame: {
-      subscribe: (_parent: unknown, { gameId }: { gameId: string }, { pubsub }: { pubsub: any }) => {
+      subscribe: (_parent: unknown, { gameId, playerId }: { gameId: string; playerId: string }, { pubsub }: { pubsub: any }): Game => {
         const game = store.getGame(gameId);
         if (!game) {
           throw new Error(`Game with ID ${gameId} not found`);

@@ -33,7 +33,10 @@ export default function App() {
     onCompleted: (result) => {
       setGameId(result.newGame.id);
       setUiStatus('IN_GAME');
-    }
+    },
+    onError: (error) => {
+      console.error('Error starting new game:', error);
+    } 
   });
 
   const { data } = useQuery<{ game: Game | null }>(GET_GAME, {
@@ -45,16 +48,16 @@ export default function App() {
   const [passMove] = useMutation<{ passMove: Game }>(PASS_MOVE);
   const [accumulatedData, setAccumulatedData] = useState([]);
   const { data: data2, error, loading } = useSubscription(JOIN_GAME, {
-      onData({ data: data2 }) {
-        console.log(data2)
-      },
-    });
+    onData({ data: data2 }) {
+      console.log(data2)
+    },
+  });
 
-    useEffect(() => {
-      if (uiStatus === 'NOT_STARTED' && !gameId) {
-        newGame({ variables: { userId: 'some-user-id' } });
-    }
-  }, [newGame]);
+  useEffect(() => {
+    /*if (uiStatus === 'NOT_STARTED' && !gameId) {
+        newGame({ variables: { userId: userId } });
+    }*/
+  }, []);
 
   const game = data?.game ?? null;
 
@@ -107,7 +110,9 @@ export default function App() {
       {uiStatus === 'NOT_STARTED' ? (
         <>
           {userId ? <p>Logged in as: {playerName}</p> : null}
-          <button type="button" onClick={() => newGame()} disabled={creating}>
+          <button type="button" onClick={() => {
+            newGame({ variables: { userId: userId } });
+          }} disabled={creating}>
             Start new game
           </button>
           <label>
@@ -132,7 +137,9 @@ export default function App() {
           ) : (
             <>
               Game ID: {game?.id ?? 'unknown'}
-              <GameInfo game={game} onNewGame={() => newGame()} onPass={onPass} />
+              <GameInfo game={game} onNewGame={() => {
+                newGame({ variables: { userId: userId } });
+              }} onPass={onPass} />
               <Board game={game} onPlay={onPlay} />
             </>
           )}
