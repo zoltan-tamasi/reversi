@@ -11,11 +11,11 @@
     "start": "node dist/index.js",
     "test": "node --import tsx --test src/game/reversi.test.ts src/game/gameStore.test.ts",
     "test:all": "node --import tsx --test src/game/reversi.test.ts src/game/gameStore.test.ts"
-    
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
-    "graphql": "^16.9.0"
+    "graphql": "^16.9.0",
+    "graphql-subscriptions": "^3.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

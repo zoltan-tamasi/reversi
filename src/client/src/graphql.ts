@@ -25,6 +25,11 @@ export type Game = {
   winner: Disc | null;
 };
 
+export type Player = {
+  id: string;
+  name: string;
+};
+
 // Shared fragment so every query/mutation returns a consistent game shape.
 export const GAME_FIELDS = gql`
   fragment GameFields on Game {
@@ -64,7 +69,7 @@ export const NEW_GAME = gql`
 `;
 
 export const REGISTER_PLAYER = gql`
-  mutation RegisterPlayer($name: String!) {
+  mutation RegisterPlayer($name: String!): Player {
     registerPlayer(name: $name) {
       id
       name

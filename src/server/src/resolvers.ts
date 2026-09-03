@@ -1,5 +1,6 @@
 import { legalMoves, scores } from './game/reversi.js';
 import type { Game } from './game/reversi.js';
+import type { Player } from './gameStore.js';
 import * as store from './gameStore.js';
 
 export const resolvers = {
@@ -11,7 +12,7 @@ export const resolvers = {
     registerPlayer: (
       _parent: unknown,
       { name }: { name: string }
-    ) => store.registerPlayer(name),
+    ): Player => store.registerPlayer(name),
     newGame: (_parent: unknown, { userId }: { userId: string }) => store.createGame(userId),
     makeMove: (
       _parent: unknown,
