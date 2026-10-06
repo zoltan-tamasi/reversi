@@ -1,9 +1,22 @@
-import { ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
+import { ApolloClient, HttpLink, InMemoryCache, split } from '@apollo/client';
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
+import { getMainDefinition } from '@apollo/client/utilities';
+import { createClient } from 'graphql-ws';
 
-// The standalone Apollo Server serves GraphQL at the root path.
-const uri = import.meta.env.VITE_GRAPHQL_URI ?? 'http://localhost:4000/';
+const httpUri = import.meta.env.VITE_GRAPHQL_URI ?? 'http://localhost:4000/graphql';
+const wsUri = import.meta.env.VITE_GRAPHQL_WS_URI ?? 'ws://localhost:4000/graphql';
+
+const httpLink = new HttpLink({ uri: httpUri });
+const wsLink = new GraphQLWsLink(createClient({ url: wsUri }));
 
 export const client = new ApolloClient({
-  link: new HttpLink({ uri }),
+  link: split(
+    ({ query }) => {
+      const definition = getMainDefinition(query);
+      return definition.kind === 'OperationDefinition' && definition.operation === 'subscription';
+    },
+    wsLink,
+    httpLink
+  ),
   cache: new InMemoryCache()
 });

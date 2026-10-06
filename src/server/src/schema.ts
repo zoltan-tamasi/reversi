@@ -49,7 +49,7 @@ export const typeDefs = `#graphql
     passMove(gameId: ID!): Game!
     registerPlayer(name: String!): Player!
   }
-
+  
   type Subscription {
     joinGame(gameId: ID!, playerId: ID!): Game!
   }

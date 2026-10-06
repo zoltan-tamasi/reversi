@@ -16,6 +16,7 @@ import {
 type UIStatus = 'NOT_REGISTERED' | 'NOT_STARTED' | 'IN_GAME';
 
 export default function App() {
+  const [loading, setLoading] = useState(true);
   const [gameId, setGameId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState('Player 1');
@@ -33,6 +34,7 @@ export default function App() {
     onCompleted: (result) => {
       setGameId(result.newGame.id);
       setUiStatus('IN_GAME');
+      setLoading(false);
     },
     onError: (error) => {
       console.error('Error starting new game:', error);
@@ -47,7 +49,11 @@ export default function App() {
   const [makeMove] = useMutation<{ makeMove: Game }>(MAKE_MOVE);
   const [passMove] = useMutation<{ passMove: Game }>(PASS_MOVE);
   const [accumulatedData, setAccumulatedData] = useState([]);
-  const { data: data2, error, loading } = useSubscription(JOIN_GAME, {
+  const { data: data2 } = useSubscription(JOIN_GAME, {
+    variables: { gameId: gameId ?? '', playerId: userId ?? '' },
+    onError: (error) => {
+      console.error('Subscription error:', error);
+    },
     onData({ data: data2 }) {
       console.log(data2)
     },
@@ -60,6 +66,8 @@ export default function App() {
   }, []);
 
   const game = data?.game ?? null;
+
+  const document = data2?.documentUpdated || data2?.document;
 
   function onPlay(row: number, col: number) {
     if (game) {
@@ -87,6 +95,7 @@ export default function App() {
       console.log('No game ID provided for joining a game.');
       return;
     } 
+    setUiStatus('IN_GAME');
   }
 
   return (
@@ -136,6 +145,7 @@ export default function App() {
             <p>Starting game…</p>
           ) : (
             <>
+              {loading ? <p>Loading...</p> : <p>Game loaded.</p>}
               Game ID: {game?.id ?? 'unknown'}
               <GameInfo game={game} onNewGame={() => {
                 newGame({ variables: { userId: userId } });
