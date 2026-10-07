@@ -15,6 +15,23 @@ import {
 
 type UIStatus = 'NOT_REGISTERED' | 'NOT_STARTED' | 'IN_GAME';
 
+const GameObserver: React.FC<{ gameId: string | null, userId: string | null }> = (props) => {
+  const [accumulatedData, setAccumulatedData] = useState([]);
+  const { data, loading } = useSubscription(JOIN_GAME, {
+    variables: { gameId: props.gameId ?? '', playerId: props.userId ?? '' },
+    onError: (error) => {
+      console.error('Subscription error:', error);
+    },
+    onData({ data }) {
+      console.log(data);
+      //setAccumulatedData((prevData) => [...prevData, data]);
+    },
+  });
+
+  return loading ? <p>Loading subscription...</p> : <p>Subscription active. Data received: {JSON.stringify(data)}</p>;
+
+};
+
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [gameId, setGameId] = useState<string | null>(null);
@@ -49,15 +66,15 @@ export default function App() {
   const [makeMove] = useMutation<{ makeMove: Game }>(MAKE_MOVE);
   const [passMove] = useMutation<{ passMove: Game }>(PASS_MOVE);
   const [accumulatedData, setAccumulatedData] = useState([]);
-  const { data: data2 } = useSubscription(JOIN_GAME, {
-    variables: { gameId: gameId ?? '', playerId: userId ?? '' },
-    onError: (error) => {
-      console.error('Subscription error:', error);
-    },
-    onData({ data: data2 }) {
-      console.log(data2)
-    },
-  });
+  // const { data: data2 } = useSubscription(JOIN_GAME, {
+  //   variables: { gameId: gameToJoinId ?? '', playerId: userId ?? '' },
+  //   onError: (error) => {
+  //     console.error('Subscription error:', error);
+  //   },
+  //   onData({ data: data2 }) {
+  //     console.log(data2)
+  //   },
+  // });
 
   useEffect(() => {
     /*if (uiStatus === 'NOT_STARTED' && !gameId) {
@@ -67,7 +84,7 @@ export default function App() {
 
   const game = data?.game ?? null;
 
-  const document = data2?.documentUpdated || data2?.document;
+  //const document = data2?.documentUpdated || data2?.document;
 
   function onPlay(row: number, col: number) {
     if (game) {
@@ -96,6 +113,7 @@ export default function App() {
       return;
     } 
     setUiStatus('IN_GAME');
+    setGameId(id);
   }
 
   return (
@@ -141,6 +159,7 @@ export default function App() {
       ) : null}
       {uiStatus === 'IN_GAME' ? (
         <>
+          <GameObserver gameId={gameToJoinId} userId={userId}/>
           {!game && creating ? (
             <p>Starting game…</p>
           ) : (

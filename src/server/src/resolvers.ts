@@ -1,3 +1,4 @@
+import { PubSub } from 'graphql-subscriptions/dist/pubsub.js';
 import { legalMoves, scores } from './game/reversi.js';
 import type { Game } from './game/reversi.js';
 import type { Player } from './gameStore.js';
@@ -25,12 +26,13 @@ export const resolvers = {
 
   Subscription: {
     joinGame: {
-      subscribe: (_parent: unknown, { gameId, playerId }: { gameId: string; playerId: string }, { pubsub }: { pubsub: any }): Game => {
+      subscribe: (_parent: unknown, { gameId, playerId }: { gameId: string; playerId: string }, { pubsub }: { pubsub: PubSub }): any => {
         const game = store.getGame(gameId);
         if (!game) {
           throw new Error(`Game with ID ${gameId} not found`);
         }
-        return pubsub.asyncIterator(`JOIN_GAME_${gameId}`);
+        console.log(pubsub);
+        return pubsub.asyncIterableIterator(`JOIN_GAME_${gameId}`);
       }
     }
   },
