@@ -63,9 +63,10 @@ export const GET_GAME = gql`
 export const NEW_GAME = gql`
   mutation NewGame($userId: ID!) {
     newGame(userId: $userId) {
-      id
+      ...GameFields
     }
   }
+  ${GAME_FIELDS}
 `;
 
 export const REGISTER_PLAYER = gql`

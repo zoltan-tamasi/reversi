@@ -10,12 +10,18 @@ import {
   PASS_MOVE,
   REGISTER_PLAYER,
   JOIN_GAME,
-  type Game
+  type Game,
 } from './graphql';
 
 type UIStatus = 'NOT_REGISTERED' | 'NOT_STARTED' | 'IN_GAME';
 
-const GameObserver: React.FC<{ gameId: string | null, userId: string | null }> = (props) => {
+type GameObserverProps = {
+  gameId: string | null, 
+  userId: string | null, 
+  setGame: React.Dispatch<React.SetStateAction<Game | null>> 
+};
+
+const GameObserver: React.FC<GameObserverProps> = (props) => {
   const [accumulatedData, setAccumulatedData] = useState([]);
   const { data, loading } = useSubscription(JOIN_GAME, {
     variables: { gameId: props.gameId ?? '', playerId: props.userId ?? '' },
@@ -23,16 +29,15 @@ const GameObserver: React.FC<{ gameId: string | null, userId: string | null }> =
       console.error('Subscription error:', error);
     },
     onData({ data }) {
-      console.log(data);
-      //setAccumulatedData((prevData) => [...prevData, data]);
+      props.setGame(data.data.joinGame);
     },
   });
 
   return loading ? <p>Loading subscription...</p> : <p>Subscription active. Data received: {JSON.stringify(data)}</p>;
-
 };
 
 export default function App() {
+  const [game, setGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
   const [gameId, setGameId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -47,9 +52,12 @@ export default function App() {
     }
   });
 
-  const [newGame, { loading: creating }] = useMutation<{ newGame: { id: string } }>(NEW_GAME, {
+  const [newGame, { loading: creating }] = useMutation<{ newGame: Game }>(NEW_GAME, {
     onCompleted: (result) => {
-      setGameId(result.newGame.id);
+      const gameId = result.newGame.id;
+      setGameToJoinId(gameId);
+      setGameId(gameId);
+      setGame(result.newGame);
       setUiStatus('IN_GAME');
       setLoading(false);
     },
@@ -65,26 +73,12 @@ export default function App() {
 
   const [makeMove] = useMutation<{ makeMove: Game }>(MAKE_MOVE);
   const [passMove] = useMutation<{ passMove: Game }>(PASS_MOVE);
-  const [accumulatedData, setAccumulatedData] = useState([]);
-  // const { data: data2 } = useSubscription(JOIN_GAME, {
-  //   variables: { gameId: gameToJoinId ?? '', playerId: userId ?? '' },
-  //   onError: (error) => {
-  //     console.error('Subscription error:', error);
-  //   },
-  //   onData({ data: data2 }) {
-  //     console.log(data2)
-  //   },
-  // });
 
   useEffect(() => {
     /*if (uiStatus === 'NOT_STARTED' && !gameId) {
         newGame({ variables: { userId: userId } });
     }*/
   }, []);
-
-  const game = data?.game ?? null;
-
-  //const document = data2?.documentUpdated || data2?.document;
 
   function onPlay(row: number, col: number) {
     if (game) {
@@ -159,7 +153,7 @@ export default function App() {
       ) : null}
       {uiStatus === 'IN_GAME' ? (
         <>
-          <GameObserver gameId={gameToJoinId} userId={userId}/>
+          <GameObserver gameId={gameToJoinId} userId={userId} setGame={setGame} />
           {!game && creating ? (
             <p>Starting game…</p>
           ) : (

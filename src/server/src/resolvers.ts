@@ -10,18 +10,28 @@ export const resolvers = {
   },
 
   Mutation: {
+
     registerPlayer: (
       _parent: unknown,
       { name }: { name: string }
-    ): Player => store.registerPlayer(name),
-    newGame: (_parent: unknown, { userId }: { userId: string }) => store.createGame(userId),
+    ): Player => 
+      store.registerPlayer(name),
+
+    newGame: (_parent: unknown, { userId }: { userId: string }) : Game => 
+      store.createGame(userId),
+
     makeMove: (
       _parent: unknown,
-      { gameId, row, col }: { gameId: string; row: number; col: number }
-    ) => store.makeMove(gameId, row, col),
+      { gameId, row, col }: { gameId: string; row: number; col: number },
+      { pubsub }: { pubsub: PubSub }
+    ): Game => {
+      pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: store.getGame(gameId) });
+      return store.makeMove(gameId, row, col);
+    },
     
-    passMove: (_parent: unknown, { gameId }: { gameId: string }) =>
+    passMove: (_parent: unknown, { gameId }: { gameId: string }, { pubsub }: { pubsub: PubSub }): Game => 
       store.passMove(gameId)
+
   },
 
   Subscription: {
