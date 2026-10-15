@@ -23,7 +23,7 @@ export const resolvers = {
       { pubsub }: { pubsub: PubSub }
     ) : Game => {
       const game = store.createGame(userId);
-      pubsub.publish(`JOIN_GAME_${game.id}`, { gameStartedByUser: userId, joinGame: game });
+      pubsub.publish(`JOIN_GAME_${game.id}`, { joinGame: { game } });
       return game;
     },
 
@@ -32,7 +32,7 @@ export const resolvers = {
       { gameId, row, col }: { gameId: string; row: number; col: number },
       { pubsub }: { pubsub: PubSub }
     ): Game => {
-      pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: store.getGame(gameId) });
+      pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game: store.getGame(gameId) } });
       return store.makeMove(gameId, row, col);
     },
     
@@ -44,7 +44,7 @@ export const resolvers = {
       { gameId, userId, message }: { gameId: string; userId: string; message: string },
       { pubsub }: { pubsub: PubSub }
     ): boolean => {
-      pubsub.publish(`JOIN_GAME_${gameId}`, { message: message, joinGame: store.getGame(gameId) });
+      pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game: store.getGame(gameId), message } });
       return true;
     }
 

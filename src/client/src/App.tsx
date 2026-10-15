@@ -24,14 +24,17 @@ type GameObserverProps = {
 
 const GameObserver: React.FC<GameObserverProps> = (props) => {
   const [accumulatedData, setAccumulatedData] = useState([]);
-  const { data, loading } = useSubscription(JOIN_GAME, {
+  const { data, loading } = useSubscription<{ joinGame: { game: Game | null; message: string | null } }>(JOIN_GAME, {
     variables: { gameId: props.gameId ?? '', playerId: props.userId ?? '' },
     onError: (error) => {
       console.error('Subscription error:', error);
     },
     onData({ data }) {
       console.log('Subscription data received:', data);
-      props.setGame(data.data.joinGame);
+      const game = data.data?.joinGame.game;
+      if (game) {
+        props.setGame(game);
+      }
     },
   });
 
