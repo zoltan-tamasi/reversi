@@ -17,8 +17,15 @@ export const resolvers = {
     ): Player => 
       store.registerPlayer(name),
 
-    newGame: (_parent: unknown, { userId }: { userId: string }) : Game => 
-      store.createGame(userId),
+    newGame: (
+      _parent: unknown, 
+      { userId }: { userId: string },
+      { pubsub }: { pubsub: PubSub }
+    ) : Game => {
+      const game = store.createGame(userId);
+      pubsub.publish(`JOIN_GAME_${game.id}`, { gameStartedByUser: userId, joinGame: game });
+      return game;
+    },
 
     makeMove: (
       _parent: unknown,
@@ -30,7 +37,16 @@ export const resolvers = {
     },
     
     passMove: (_parent: unknown, { gameId }: { gameId: string }, { pubsub }: { pubsub: PubSub }): Game => 
-      store.passMove(gameId)
+      store.passMove(gameId),
+
+    sayHello: (
+      _parent: unknown, 
+      { gameId, userId, message }: { gameId: string; userId: string; message: string },
+      { pubsub }: { pubsub: PubSub }
+    ): boolean => {
+      pubsub.publish(`JOIN_GAME_${gameId}`, { message: message, joinGame: store.getGame(gameId) });
+      return true;
+    }
 
   },
 

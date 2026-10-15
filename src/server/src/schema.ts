@@ -48,9 +48,15 @@ export const typeDefs = `#graphql
     makeMove(gameId: ID!, row: Int!, col: Int!): Game!
     passMove(gameId: ID!): Game!
     registerPlayer(name: String!): Player!
+    sayHello(gameId: ID!, userId: ID!, message: String!): Boolean!
   }
   
   type Subscription {
-    joinGame(gameId: ID!, playerId: ID!): Game!
+    joinGame(gameId: ID!, playerId: ID!): SubscriptionMessage!
+  }
+
+  type SubscriptionMessage {
+    message: String
+    game: Game
   }
 `;

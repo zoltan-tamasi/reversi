@@ -11,6 +11,7 @@ import {
   REGISTER_PLAYER,
   JOIN_GAME,
   type Game,
+  SAY_HELLO,
 } from './graphql';
 
 type UIStatus = 'NOT_REGISTERED' | 'NOT_STARTED' | 'IN_GAME';
@@ -29,11 +30,12 @@ const GameObserver: React.FC<GameObserverProps> = (props) => {
       console.error('Subscription error:', error);
     },
     onData({ data }) {
+      console.log('Subscription data received:', data);
       props.setGame(data.data.joinGame);
     },
   });
 
-  return loading ? <p>Loading subscription...</p> : <p>Subscription active. Data received: {JSON.stringify(data)}</p>;
+  return loading ? <p>Loading subscription...</p> : <p>Subscription active. Last data received at: {new Date().toLocaleTimeString()}</p>;
 };
 
 export default function App() {
@@ -73,6 +75,7 @@ export default function App() {
 
   const [makeMove] = useMutation<{ makeMove: Game }>(MAKE_MOVE);
   const [passMove] = useMutation<{ passMove: Game }>(PASS_MOVE);
+  const [sayHello] = useMutation<{ sayHello: boolean }>(SAY_HELLO);
 
   useEffect(() => {
     /*if (uiStatus === 'NOT_STARTED' && !gameId) {
@@ -108,6 +111,7 @@ export default function App() {
     } 
     setUiStatus('IN_GAME');
     setGameId(id);
+    sayHello({ variables: { gameId: id, userId: userId, message: "Hello, world!" } });
   }
 
   return (
@@ -164,6 +168,11 @@ export default function App() {
                 newGame({ variables: { userId: userId } });
               }} onPass={onPass} />
               <Board game={game} onPlay={onPlay} />
+              <button type="button" onClick={() => {
+                sayHello({ variables: { gameId: gameToJoinId, userId: userId, message: "Hello, world!" } });
+              }}>
+                Say Hello
+              </button>
             </>
           )}
         </>

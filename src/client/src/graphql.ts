@@ -99,9 +99,17 @@ export const PASS_MOVE = gql`
 export const JOIN_GAME = gql`
   subscription JoinGame($gameId: ID!, $playerId: ID!) {
     joinGame(gameId: $gameId, playerId: $playerId) {
-      ...GameFields
+      game {  
+        ...GameFields
+      }
+      message
     } 
   }
   ${GAME_FIELDS}
 `;
 
+export const SAY_HELLO = gql`
+  mutation SayHello($gameId: ID!, $userId: ID!, $message: String!) {
+    sayHello(gameId: $gameId, userId: $userId, message: $message)
+  }
+`;
