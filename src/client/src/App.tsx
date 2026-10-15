@@ -12,6 +12,7 @@ import {
   JOIN_GAME,
   type Game,
   SAY_HELLO,
+  JOIN_AS_OPPONENT,
 } from './graphql';
 
 type UIStatus = 'NOT_REGISTERED' | 'NOT_STARTED' | 'IN_GAME';
@@ -23,7 +24,11 @@ type GameObserverProps = {
 };
 
 const GameObserver: React.FC<GameObserverProps> = (props) => {
-  const [accumulatedData, setAccumulatedData] = useState([]);
+  const { loading: gameLoading, error, data: gameData } = useQuery<{ game: Game | null }>(GET_GAME, {
+    variables: { id: props.gameId ?? '' },
+    skip: !props.gameId
+  });
+  const [game, setGame] = useState<Game | null>(null);
   const { data, loading } = useSubscription<{ joinGame: { game: Game | null; message: string | null } }>(JOIN_GAME, {
     variables: { gameId: props.gameId ?? '', playerId: props.userId ?? '' },
     onError: (error) => {
@@ -37,6 +42,17 @@ const GameObserver: React.FC<GameObserverProps> = (props) => {
       }
     },
   });
+
+  useEffect(() => {
+    if (gameData?.game) {
+      setGame(gameData.game);
+      props.setGame(gameData.game);
+    }
+  }, [gameData, props]);
+
+  if (error) {
+    return <p>Error loading subscription: {error.message}</p>;
+  }
 
   return loading ? <p>Loading subscription...</p> : <p>Subscription active. Last data received at: {new Date().toLocaleTimeString()}</p>;
 };
@@ -71,24 +87,14 @@ export default function App() {
     } 
   });
 
-  const { data } = useQuery<{ game: Game | null }>(GET_GAME, {
-    variables: { id: gameId ?? '' },
-    skip: !gameId
-  });
-
   const [makeMove] = useMutation<{ makeMove: Game }>(MAKE_MOVE);
   const [passMove] = useMutation<{ passMove: Game }>(PASS_MOVE);
   const [sayHello] = useMutation<{ sayHello: boolean }>(SAY_HELLO);
-
-  useEffect(() => {
-    /*if (uiStatus === 'NOT_STARTED' && !gameId) {
-        newGame({ variables: { userId: userId } });
-    }*/
-  }, []);
+  const [joinAsOpponent] = useMutation<{ joinAsOpponent: Game }>(JOIN_AS_OPPONENT);
 
   function onPlay(row: number, col: number) {
     if (game) {
-      void makeMove({ variables: { gameId: game.id, row, col } });
+      void makeMove({ variables: { gameId: game.id, userId: userId, row, col } });
     }
   }
 
@@ -115,6 +121,7 @@ export default function App() {
     setUiStatus('IN_GAME');
     setGameId(id);
     sayHello({ variables: { gameId: id, userId: userId, message: "Hello, world!" } });
+    joinAsOpponent({ variables: { gameId: id, userId: userId } });
   }
 
   return (
@@ -175,6 +182,11 @@ export default function App() {
                 sayHello({ variables: { gameId: gameToJoinId, userId: userId, message: "Hello, world!" } });
               }}>
                 Say Hello
+              </button>
+              <button type="button" onClick={() => {
+                
+              }}>
+                Join Game
               </button>
             </>
           )}

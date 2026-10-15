@@ -7,7 +7,8 @@ import {
   applyMove,
   createBoard,
   legalMoves,
-  opponent
+  opponent,
+  winner
 } from './game/reversi.js';
 import type { Game } from './game/reversi.js';
 
@@ -40,7 +41,8 @@ export function createGame(userId: string): Game {
     blackPlayer: userId,
     whitePlayer: '',
     playerToTakeNextMove: BLACK,
-    status: 'WAITING_FOR_PLAYERS'
+    status: 'WAITING_FOR_PLAYERS',
+    events: []
   };
   games.set(game.id, game);
   return game;
@@ -50,15 +52,29 @@ export function getGame(id: string): Game | null {
   return games.get(id) ?? null;
 }
 
-export function makeMove(id: string, row: number, col: number): Game {
+// The first other player to join takes white and starts the game. Anyone
+// joining after that (or either player rejoining) just observes.
+export function joinGame(id: string, playerId: string): Game {
   const game = requireGame(id);
+  if (game.status === 'WAITING_FOR_PLAYERS' && playerId !== game.blackPlayer) {
+    game.whitePlayer = playerId;
+    game.status = 'IN_PROGRESS';
+    console.log(`Game ${id} started: black=${game.blackPlayer}, white=${game.whitePlayer}`);
+  }
+  return game;
+}
+
+export function makeMove(id: string, playerId: string, row: number, col: number): Game {
+  const game = requireGame(id);
+  requireTurn(game, playerId);
   game.board = applyMove(game.board, row, col, game.playerToTakeNextMove);
   advanceTurn(game);
   return game;
 }
 
-export function passMove(id: string): Game {
+export function passMove(id: string, playerId: string): Game {
   const game = requireGame(id);
+  requireTurn(game, playerId);
   if (legalMoves(game.board, game.playerToTakeNextMove).length > 0) {
     throw new Error('Cannot pass while a legal move is available');
   }
@@ -74,10 +90,24 @@ function requireGame(id: string): Game {
   return game;
 }
 
+function requireTurn(game: Game, playerId: string): void {
+  if (game.status !== 'IN_PROGRESS') {
+    throw new Error('Game is not in progress');
+  }
+  const playerToMove = game.playerToTakeNextMove === BLACK ? game.blackPlayer : game.whitePlayer;
+  if (playerId !== playerToMove) {
+    throw new Error('It is not your turn');
+  }
+}
+
 function advanceTurn(game: Game): void {
   const next = opponent(game.playerToTakeNextMove);
   if (legalMoves(game.board, next).length > 0) {
     game.playerToTakeNextMove = next;
+  } else if (legalMoves(game.board, game.playerToTakeNextMove).length === 0) {
+    // Neither side can move, so the game is over.
+    game.status = 'FINISHED';
+    game.winner = winner(game.board);
   }
 }
 

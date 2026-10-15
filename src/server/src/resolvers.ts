@@ -29,15 +29,15 @@ export const resolvers = {
 
     makeMove: (
       _parent: unknown,
-      { gameId, row, col }: { gameId: string; row: number; col: number },
+      { gameId, userId, row, col }: { gameId: string; userId: string; row: number; col: number },
       { pubsub }: { pubsub: PubSub }
     ): Game => {
       pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game: store.getGame(gameId) } });
-      return store.makeMove(gameId, row, col);
+      return store.makeMove(gameId, userId, row, col);
     },
     
     passMove: (_parent: unknown, { gameId }: { gameId: string }, { pubsub }: { pubsub: PubSub }): Game => 
-      store.passMove(gameId),
+      store.passMove(gameId, null as unknown as string),
 
     sayHello: (
       _parent: unknown, 
@@ -45,6 +45,16 @@ export const resolvers = {
       { pubsub }: { pubsub: PubSub }
     ): boolean => {
       pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game: store.getGame(gameId), message } });
+      return true;
+    },
+
+    joinAsOpponent: (
+      _parent: unknown,
+      { gameId, userId }: { gameId: string; userId: string },
+      { pubsub }: { pubsub: PubSub }
+    ): boolean => {
+      store.joinGame(gameId, userId);
+      pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game: store.getGame(gameId) } });
       return true;
     }
 
@@ -70,6 +80,7 @@ export const resolvers = {
     legalMoves: (game: Game) => legalMoves(game.board, game.playerToTakeNextMove),
     scores: (game: Game) => scores(game.board),
     status: (game: Game) => (game.status),
-    winner: (game: Game) => (game.status === 'FINISHED' ? game.winner : null)
+    winner: (game: Game) => (game.status === 'FINISHED' ? game.winner : null),
+    events: (game: Game) => game.events
   }
 };

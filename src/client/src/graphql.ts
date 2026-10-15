@@ -79,8 +79,8 @@ export const REGISTER_PLAYER = gql`
 `;
 
 export const MAKE_MOVE = gql`
-  mutation MakeMove($gameId: ID!, $row: Int!, $col: Int!) {
-    makeMove(gameId: $gameId, row: $row, col: $col) {
+  mutation MakeMove($gameId: ID!, $userId: ID!, $row: Int!, $col: Int!) {
+    makeMove(gameId: $gameId, userId: $userId, row: $row, col: $col) {
       ...GameFields
     }
   }
@@ -111,5 +111,11 @@ export const JOIN_GAME = gql`
 export const SAY_HELLO = gql`
   mutation SayHello($gameId: ID!, $userId: ID!, $message: String!) {
     sayHello(gameId: $gameId, userId: $userId, message: $message)
+  }
+`;
+
+export const JOIN_AS_OPPONENT = gql`
+  mutation JoinAsOpponent($gameId: ID!, $userId: ID!) {
+    joinAsOpponent(gameId: $gameId, userId: $userId) 
   }
 `;

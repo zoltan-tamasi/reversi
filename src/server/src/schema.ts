@@ -22,6 +22,17 @@ export const typeDefs = `#graphql
     white: Int!
   }
 
+  type GameEvent {
+    type: String!
+    player: Disc
+    row: Int
+    col: Int
+    message: String
+    winner: Disc
+    timestamp: Float!
+    initiatedBy: ID!
+  }
+
   type Game {
     id: ID!
     board: [[Disc!]!]!
@@ -32,6 +43,7 @@ export const typeDefs = `#graphql
     scores: Score!
     status: GameStatus!
     winner: Disc
+    events: [GameEvent!]!
   }
 
   type Player {
@@ -45,10 +57,11 @@ export const typeDefs = `#graphql
 
   type Mutation {
     newGame(userId: ID!): Game!
-    makeMove(gameId: ID!, row: Int!, col: Int!): Game!
+    makeMove(gameId: ID!, userId: ID!, row: Int!, col: Int!): Game!
     passMove(gameId: ID!): Game!
     registerPlayer(name: String!): Player!
     sayHello(gameId: ID!, userId: ID!, message: String!): Boolean!
+    joinAsOpponent(gameId: ID!, userId: ID!): Boolean!
   }
   
   type Subscription {

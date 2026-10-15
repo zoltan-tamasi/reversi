@@ -12,6 +12,16 @@ export type PositionWithFlips = { row: number; col: number; flips: Position[] };
 
 const SIZE = 8 as const;
 
+export type EventTypes =
+  | { type: 'START'; }
+  | { type: 'MOVE'; player: Player; row: number; col: number }
+  | { type: 'PASS'; player: Player }
+  | { type: 'JOIN'; player: Player }
+  | { type: 'MESSAGE'; player: Player; message: string }
+  | { type: 'END'; winner: Player | typeof EMPTY };
+
+export type GameEvent = EventTypes & { timestamp: number, initiatedBy: string};
+
 export type Board = Array<Array<CellContent>>;
 
 export type Game = {
@@ -21,7 +31,8 @@ export type Game = {
   blackPlayer: string;  // user ID of the player controlling black
   whitePlayer: string;  // user ID of the player controlling white
   playerToTakeNextMove: Player;
-  winner?: Player;
+  winner?: Player | typeof EMPTY;  // EMPTY means a draw
+  events: Array<GameEvent>;
 };
 
 export type User = {
