@@ -94,6 +94,11 @@ export const resolvers = {
       store.joinGame(gameId, requireUser(context));
       context.pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game: store.getGame(gameId) } });
       return true;
+    },
+
+    leaveGame: (_parent: unknown, _args: unknown, context: Context): boolean => {
+      store.leaveGame(requireUser(context));
+      return true;
     }
 
   },

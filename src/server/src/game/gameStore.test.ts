@@ -5,6 +5,7 @@ import {
   createGame,
   getPlayer,
   joinGame,
+  leaveGame,
   registerPlayer
 } from '../gameStore';
 
@@ -41,4 +42,15 @@ test('joining a game that already has two players only watches it', () => {
   joinGame(game.id, watcher.id);
   assert.equal(getPlayer(watcher.id)?.currentGameId, game.id);
   assert.equal(getPlayer(watcher.id)?.color, null);
+});
+test('leaving a game clears the player\'s current game but keeps their seat', () => {
+  const creator = registerPlayer('Creator');
+  const game = createGame(creator.id);
+  leaveGame(creator.id);
+  assert.equal(getPlayer(creator.id)?.currentGameId, null);
+  assert.equal(getPlayer(creator.id)?.color, null);
+  assert.equal(game.blackPlayer, creator.id);
+  joinGame(game.id, creator.id);
+  assert.equal(getPlayer(creator.id)?.currentGameId, game.id);
+  assert.equal(getPlayer(creator.id)?.color, 'BLACK');
 });

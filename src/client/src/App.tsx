@@ -13,6 +13,7 @@ import {
   type Game,
   SAY_HELLO,
   JOIN_AS_OPPONENT,
+  LEAVE_GAME,
   RESTORE_USER_SESSION,
   type UserSession,
 } from './graphql';
@@ -126,6 +127,17 @@ export default function App() {
   const [joinAsOpponent] = useMutation<{ joinAsOpponent: Game }>(JOIN_AS_OPPONENT, {
     refetchQueries: [RESTORE_USER_SESSION]
   });
+  const [leaveGame] = useMutation<{ leaveGame: boolean }>(LEAVE_GAME, {
+    refetchQueries: [RESTORE_USER_SESSION]
+  });
+
+  function onLeaveGame() {
+    void leaveGame();
+    setGame(null);
+    setGameId(null);
+    setGameToJoinId(null);
+    setUiStatus('NOT_STARTED');
+  }
 
   function onPlay(row: number, col: number) {
     if (game) {
@@ -204,6 +216,9 @@ export default function App() {
       {uiStatus === 'IN_GAME' ? (
         <>
           <GameObserver gameId={gameToJoinId} setGame={setGame} />
+          <button type="button" onClick={onLeaveGame}>
+            Leave game
+          </button>
           {!game && creating ? (
             <p>Starting game…</p>
           ) : (

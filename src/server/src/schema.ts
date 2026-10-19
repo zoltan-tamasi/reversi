@@ -77,6 +77,7 @@ export const typeDefs = `#graphql
     registerPlayer(name: String!): AuthPayload!
     sayHello(gameId: ID!, message: String!): Boolean!
     joinAsOpponent(gameId: ID!): Boolean!
+    leaveGame: Boolean!
   }
   
   type Subscription {

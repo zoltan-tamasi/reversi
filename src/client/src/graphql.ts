@@ -141,3 +141,9 @@ export const JOIN_AS_OPPONENT = gql`
     joinAsOpponent(gameId: $gameId) 
   }
 `;
+
+export const LEAVE_GAME = gql`
+  mutation LeaveGame {
+    leaveGame
+  }
+`;

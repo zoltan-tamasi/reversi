@@ -10,11 +10,13 @@ const wsUri = import.meta.env.VITE_GRAPHQL_WS_URI ?? 'ws://localhost:4000/graphq
 const TOKEN_KEY = 'reversi.authToken';
 
 // Session token issued by the server on registration. It is kept in
-// localStorage so a page refresh keeps the session; storage can be
-// unavailable (e.g. private mode), in which case it lives in memory only.
+// sessionStorage so a page refresh keeps the session. sessionStorage is
+// per tab, so two tabs can be logged in as different players (localStorage
+// would make every tab share the last registered player's token). Storage
+// can be unavailable, in which case the token lives in memory only.
 let authToken: string | null = (() => {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
@@ -28,9 +30,9 @@ export function setAuthToken(token: string | null) {
   authToken = token;
   try {
     if (token) {
-      localStorage.setItem(TOKEN_KEY, token);
+      sessionStorage.setItem(TOKEN_KEY, token);
     } else {
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
     }
   } catch {
     // Ignore storage failures; the in-memory token still works.

@@ -73,7 +73,14 @@ export function joinGame(id: string, playerId: string): Game {
   return game;
 }
 
-function assignToGame(playerId: string, gameId: string, color: Color | null): void {
+// Detaches the player from their current game so a restored session no
+// longer returns them to it. The game itself is unaffected, so the player can
+// rejoin it by ID and keep their seat.
+export function leaveGame(playerId: string): void {
+  assignToGame(playerId, null, null);
+}
+
+function assignToGame(playerId: string, gameId: string | null, color: Color | null): void {
   const player = players.get(playerId);
   if (player) {
     player.currentGameId = gameId;
