@@ -58,7 +58,7 @@ export const typeDefs = `#graphql
   type Mutation {
     newGame(userId: ID!): Game!
     makeMove(gameId: ID!, userId: ID!, row: Int!, col: Int!): Game!
-    passMove(gameId: ID!): Game!
+    passMove(gameId: ID!, userId: ID!): Game!
     registerPlayer(name: String!): Player!
     sayHello(gameId: ID!, userId: ID!, message: String!): Boolean!
     joinAsOpponent(gameId: ID!, userId: ID!): Boolean!

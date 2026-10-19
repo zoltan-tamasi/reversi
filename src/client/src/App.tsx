@@ -100,7 +100,7 @@ export default function App() {
 
   function onPass() {
     if (game) {
-      void passMove({ variables: { gameId: game.id } });
+      void passMove({ variables: { gameId: game.id, userId } });
     }
   }
 

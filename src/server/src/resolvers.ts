@@ -32,12 +32,20 @@ export const resolvers = {
       { gameId, userId, row, col }: { gameId: string; userId: string; row: number; col: number },
       { pubsub }: { pubsub: PubSub }
     ): Game => {
-      pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game: store.getGame(gameId) } });
-      return store.makeMove(gameId, userId, row, col);
+      const game = store.makeMove(gameId, userId, row, col);
+      pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game } });
+      return game;
     },
     
-    passMove: (_parent: unknown, { gameId }: { gameId: string }, { pubsub }: { pubsub: PubSub }): Game => 
-      store.passMove(gameId, null as unknown as string),
+    passMove: (
+      _parent: unknown,
+      { gameId, userId }: { gameId: string; userId: string },
+      { pubsub }: { pubsub: PubSub }
+    ): Game => {
+      const game = store.passMove(gameId, userId);
+      pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game } });
+      return game;
+    },
 
     sayHello: (
       _parent: unknown, 

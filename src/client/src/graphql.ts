@@ -88,8 +88,8 @@ export const MAKE_MOVE = gql`
 `;
 
 export const PASS_MOVE = gql`
-  mutation PassMove($gameId: ID!) {
-    passMove(gameId: $gameId) {
+  mutation PassMove($gameId: ID!, $userId: ID!) {
+    passMove(gameId: $gameId, userId: $userId) {
       ...GameFields
     }
   }
