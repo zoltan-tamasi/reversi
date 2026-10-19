@@ -47,6 +47,20 @@ h1 {
   gap: 0.4rem;
 }
 
+.side {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.side .disc {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
 .status {
   margin: 0;
   font-size: 1.1rem;

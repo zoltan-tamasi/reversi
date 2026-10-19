@@ -174,7 +174,7 @@ export default function App() {
             <>
               {loading ? <p>Loading...</p> : <p>Game loaded.</p>}
               Game ID: {game?.id ?? 'unknown'}
-              <GameInfo game={game} onNewGame={() => {
+              <GameInfo game={game} userId={userId} onNewGame={() => {
                 newGame({ variables: { userId: userId } });
               }} onPass={onPass} />
               <Board game={game} onPlay={onPlay} />
