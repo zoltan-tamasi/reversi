@@ -6,6 +6,12 @@ import type { Player } from './gameStore.js';
 import * as store from './gameStore.js';
 import { createSession } from './sessionStore.js';
 
+type UserSession = {
+  player: Player;
+  currentGameId: string | null;
+  color: Player['color'];
+};
+
 export type Context = {
   pubsub: PubSub;
   // Resolved from the session token; null when the request is unauthenticated.
@@ -21,7 +27,13 @@ function requireUser({ userId }: Context): string {
 
 export const resolvers = {
   Query: {
-    game: (_parent: unknown, { id }: { id: string }) => store.getGame(id)
+    game: (_parent: unknown, { id }: { id: string }) => store.getGame(id),
+    restoreUserSession: (_parent: unknown, _args: unknown, { userId }: Context): UserSession | null => {
+      const player = userId ? store.getPlayer(userId) : null;
+      return player
+        ? { player, currentGameId: player.currentGameId, color: player.color }
+        : null;
+    }
   },
 
   Mutation: {

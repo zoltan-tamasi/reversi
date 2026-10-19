@@ -1,17 +1,16 @@
-import type { Game } from '../graphql';
+import type { Disc, Game } from '../graphql';
 import Cell from './Cell';
 
 type BoardProps = {
   game: Game | null;
-  userId: string | null;
+  myColor: Disc | null;
   onPlay: (row: number, col: number) => void;
 };
 
-export default function Board({ game, userId, onPlay }: BoardProps) {
+export default function Board({ game, myColor, onPlay }: BoardProps) {
   if (!game) return null;
 
-  const playerToMove = game.playerToTakeNextMove === 'BLACK' ? game.blackPlayer : game.whitePlayer;
-  const thisPlayersTurn = game.status === 'IN_PROGRESS' && userId === playerToMove;
+  const thisPlayersTurn = game.status === 'IN_PROGRESS' && myColor === game.playerToTakeNextMove;
   const legal = new Set(
     thisPlayersTurn ? game.legalMoves.map((move) => `${move.row},${move.col}`) : []
   );

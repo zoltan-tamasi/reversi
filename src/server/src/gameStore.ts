@@ -4,17 +4,20 @@
 import { randomUUID } from 'node:crypto';
 import {
   BLACK,
+  WHITE,
   applyMove,
   createBoard,
   legalMoves,
   opponent,
   winner
 } from './game/reversi.js';
-import type { Game } from './game/reversi.js';
+import type { Game, Player as Color } from './game/reversi.js';
 
 export type Player = {
   id: string;
   name: string;
+  currentGameId: string | null;
+  color: Color | null;
 }
 
 const players = new Map<string, Player>();
@@ -23,7 +26,9 @@ const games = new Map<string, Game>();
 export function registerPlayer(name: string): Player {
   const player: Player = {
     id: randomUUID(),
-    name
+    name,
+    currentGameId: null,
+    color: null
   };
 
   players.set(player.id, player);
@@ -45,6 +50,8 @@ export function createGame(userId: string): Game {
     events: []
   };
   games.set(game.id, game);
+  // Whoever creates a game always plays black.
+  assignToGame(userId, game.id, BLACK);
   return game;
 }
 
@@ -61,7 +68,17 @@ export function joinGame(id: string, playerId: string): Game {
     game.status = 'IN_PROGRESS';
     console.log(`Game ${id} started: black=${game.blackPlayer}, white=${game.whitePlayer}`);
   }
+  const color = playerId === game.blackPlayer ? BLACK : playerId === game.whitePlayer ? WHITE : null;
+  assignToGame(playerId, id, color);
   return game;
+}
+
+function assignToGame(playerId: string, gameId: string, color: Color | null): void {
+  const player = players.get(playerId);
+  if (player) {
+    player.currentGameId = gameId;
+    player.color = color;
+  }
 }
 
 export function makeMove(id: string, playerId: string, row: number, col: number): Game {

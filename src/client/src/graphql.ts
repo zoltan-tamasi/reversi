@@ -30,6 +30,12 @@ export type Player = {
   name: string;
 };
 
+export type UserSession = {
+  player: Player;
+  currentGameId: string | null;
+  color: Disc | null;
+};
+
 // Shared fragment so every query/mutation returns a consistent game shape.
 export const GAME_FIELDS = gql`
   fragment GameFields on Game {
@@ -67,6 +73,19 @@ export const NEW_GAME = gql`
     }
   }
   ${GAME_FIELDS}
+`;
+
+export const RESTORE_USER_SESSION = gql`
+  query RestoreUserSession {
+    restoreUserSession {
+      player {
+        id
+        name
+      }
+      currentGameId
+      color
+    }
+  }
 `;
 
 export const REGISTER_PLAYER = gql`

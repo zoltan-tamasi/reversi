@@ -2,19 +2,18 @@ import type { Disc, Game } from '../graphql';
 
 type GameInfoProps = {
   game: Game | null;
-  userId: string | null;
+  myColor: Disc | null;
   onNewGame: () => void;
   onPass: () => void;
 };
 
-export default function GameInfo({ game, userId, onNewGame, onPass }: GameInfoProps) {
+export default function GameInfo({ game, myColor, onNewGame, onPass }: GameInfoProps) {
   if (!game) return null;
 
   const { scores, playerToTakeNextMove, status, winner, legalMoves } = game;
   const finished = status === 'FINISHED';
   const canPass = !finished && legalMoves.length === 0;
-  const side: Disc | null =
-    userId === game.blackPlayer ? 'BLACK' : userId === game.whitePlayer ? 'WHITE' : null;
+  const side = myColor;
 
   return (
     <div className="info">

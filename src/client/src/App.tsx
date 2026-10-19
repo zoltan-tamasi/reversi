@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useSubscription } from '@apollo/client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import Board from './components/Board';
 import GameInfo from './components/GameInfo';
@@ -13,14 +13,15 @@ import {
   type Game,
   SAY_HELLO,
   JOIN_AS_OPPONENT,
+  RESTORE_USER_SESSION,
+  type UserSession,
 } from './graphql';
-import { setAuthToken } from './apollo';
+import { getAuthToken, setAuthToken } from './apollo';
 
 type UIStatus = 'NOT_REGISTERED' | 'NOT_STARTED' | 'IN_GAME';
 
 type GameObserverProps = {
   gameId: string | null, 
-  userId: string | null, 
   setGame: React.Dispatch<React.SetStateAction<Game | null>> 
 };
 
@@ -62,20 +63,50 @@ export default function App() {
   const [game, setGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
   const [gameId, setGameId] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState('Player 1');
   const [uiStatus, setUiStatus] = useState<UIStatus>('NOT_REGISTERED');
   const [gameToJoinId, setGameToJoinId] = useState<string | null>(null);
+  const sessionRestored = useRef(false);
 
-  const [registerPlayer] = useMutation<{ registerPlayer: { token: string; player: { id: string } } }>(REGISTER_PLAYER, {
+  // Restore the session from a stored token. If the server no longer knows
+  // the token (e.g. it restarted), drop it and ask the user to register again.
+  // The same query is refetched after creating or joining a game to pick up
+  // the color the server assigned.
+  const { loading: restoringSession, data: sessionData } = useQuery<{ restoreUserSession: UserSession | null }>(RESTORE_USER_SESSION, {
+    skip: !getAuthToken(),
+    fetchPolicy: 'network-only',
+    onCompleted: (result) => {
+      const session = result.restoreUserSession;
+      if (session) {
+        setPlayerName(session.player.name);
+        setUiStatus((status) => (status === 'NOT_REGISTERED' ? 'NOT_STARTED' : status));
+        // On page load, go straight back into the game the player was in.
+        if (!sessionRestored.current && session.currentGameId) {
+          setGameToJoinId(session.currentGameId);
+          setGameId(session.currentGameId);
+          setUiStatus('IN_GAME');
+          setLoading(false);
+        }
+        sessionRestored.current = true;
+      } else {
+        setAuthToken(null);
+      }
+    }
+  });
+
+  const session = sessionData?.restoreUserSession;
+  // Ignore a color that belongs to a game other than the one on screen.
+  const myColor = session && game && session.currentGameId === game.id ? session.color : null;
+
+  const [registerPlayer] = useMutation<{ registerPlayer: { token: string } }>(REGISTER_PLAYER, {
     onCompleted: (result) => {
       setAuthToken(result.registerPlayer.token);
-      setUserId(result.registerPlayer.player.id);
       setUiStatus('NOT_STARTED');
     }
   });
 
   const [newGame, { loading: creating }] = useMutation<{ newGame: Game }>(NEW_GAME, {
+    refetchQueries: [RESTORE_USER_SESSION],
     onCompleted: (result) => {
       const gameId = result.newGame.id;
       setGameToJoinId(gameId);
@@ -92,7 +123,9 @@ export default function App() {
   const [makeMove] = useMutation<{ makeMove: Game }>(MAKE_MOVE);
   const [passMove] = useMutation<{ passMove: Game }>(PASS_MOVE);
   const [sayHello] = useMutation<{ sayHello: boolean }>(SAY_HELLO);
-  const [joinAsOpponent] = useMutation<{ joinAsOpponent: Game }>(JOIN_AS_OPPONENT);
+  const [joinAsOpponent] = useMutation<{ joinAsOpponent: Game }>(JOIN_AS_OPPONENT, {
+    refetchQueries: [RESTORE_USER_SESSION]
+  });
 
   function onPlay(row: number, col: number) {
     if (game) {
@@ -129,7 +162,8 @@ export default function App() {
   return (
     <main className="app">
       <h1>Reversi</h1>
-      {uiStatus === 'NOT_REGISTERED' ? (
+      {restoringSession ? <p>Restoring session…</p> : null}
+      {uiStatus === 'NOT_REGISTERED' && !restoringSession ? (
         <div>
           <label>
             Player name
@@ -146,7 +180,7 @@ export default function App() {
       ) : null}
       {uiStatus === 'NOT_STARTED' ? (
         <>
-          {userId ? <p>Logged in as: {playerName}</p> : null}
+          <p>Logged in as: {playerName}</p>
           <button type="button" onClick={() => {
             newGame();
           }} disabled={creating}>
@@ -169,17 +203,17 @@ export default function App() {
       ) : null}
       {uiStatus === 'IN_GAME' ? (
         <>
-          <GameObserver gameId={gameToJoinId} userId={userId} setGame={setGame} />
+          <GameObserver gameId={gameToJoinId} setGame={setGame} />
           {!game && creating ? (
             <p>Starting game…</p>
           ) : (
             <>
               {loading ? <p>Loading...</p> : <p>Game loaded.</p>}
               Game ID: {game?.id ?? 'unknown'}
-              <GameInfo game={game} userId={userId} onNewGame={() => {
+              <GameInfo game={game} myColor={myColor} onNewGame={() => {
                 newGame();
               }} onPass={onPass} />
-              <Board game={game} userId={userId} onPlay={onPlay} />
+              <Board game={game} myColor={myColor} onPlay={onPlay} />
               <button type="button" onClick={() => {
                 sayHello({ variables: { gameId: gameToJoinId, message: "Hello, world!" } });
               }}>
