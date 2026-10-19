@@ -61,8 +61,8 @@ export const GET_GAME = gql`
 `;
 
 export const NEW_GAME = gql`
-  mutation NewGame($userId: ID!) {
-    newGame(userId: $userId) {
+  mutation NewGame {
+    newGame {
       ...GameFields
     }
   }
@@ -72,15 +72,18 @@ export const NEW_GAME = gql`
 export const REGISTER_PLAYER = gql`
   mutation RegisterPlayer($name: String!) {
     registerPlayer(name: $name) {
-      id
-      name
+      token
+      player {
+        id
+        name
+      }
     }
   }
 `;
 
 export const MAKE_MOVE = gql`
-  mutation MakeMove($gameId: ID!, $userId: ID!, $row: Int!, $col: Int!) {
-    makeMove(gameId: $gameId, userId: $userId, row: $row, col: $col) {
+  mutation MakeMove($gameId: ID!, $row: Int!, $col: Int!) {
+    makeMove(gameId: $gameId, row: $row, col: $col) {
       ...GameFields
     }
   }
@@ -88,8 +91,8 @@ export const MAKE_MOVE = gql`
 `;
 
 export const PASS_MOVE = gql`
-  mutation PassMove($gameId: ID!, $userId: ID!) {
-    passMove(gameId: $gameId, userId: $userId) {
+  mutation PassMove($gameId: ID!) {
+    passMove(gameId: $gameId) {
       ...GameFields
     }
   }
@@ -97,8 +100,8 @@ export const PASS_MOVE = gql`
 `;
 
 export const JOIN_GAME = gql`
-  subscription JoinGame($gameId: ID!, $playerId: ID!) {
-    joinGame(gameId: $gameId, playerId: $playerId) {
+  subscription JoinGame($gameId: ID!) {
+    joinGame(gameId: $gameId) {
       game {  
         ...GameFields
       }
@@ -109,13 +112,13 @@ export const JOIN_GAME = gql`
 `;
 
 export const SAY_HELLO = gql`
-  mutation SayHello($gameId: ID!, $userId: ID!, $message: String!) {
-    sayHello(gameId: $gameId, userId: $userId, message: $message)
+  mutation SayHello($gameId: ID!, $message: String!) {
+    sayHello(gameId: $gameId, message: $message)
   }
 `;
 
 export const JOIN_AS_OPPONENT = gql`
-  mutation JoinAsOpponent($gameId: ID!, $userId: ID!) {
-    joinAsOpponent(gameId: $gameId, userId: $userId) 
+  mutation JoinAsOpponent($gameId: ID!) {
+    joinAsOpponent(gameId: $gameId) 
   }
 `;

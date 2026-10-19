@@ -10,7 +10,9 @@ import { PubSub } from 'graphql-subscriptions';
 import { WebSocketServer } from 'ws';
 
 import { resolvers } from './resolvers.js';
+import type { Context } from './resolvers.js';
 import { typeDefs } from './schema.js';
+import { userIdFromAuthHeader } from './sessionStore.js';
 
 const app = express();
 
@@ -41,7 +43,12 @@ const wsServer = new WebSocketServer({
 const serverCleanup = useServer(
   {
     schema,
-    context: async () => ({ pubsub }),
+    // Browsers can't set headers on a WebSocket, so the client sends the
+    // token in the connection_init payload instead.
+    context: async (ctx): Promise<Context> => ({
+      pubsub,
+      userId: userIdFromAuthHeader(ctx.connectionParams?.authorization as string | undefined),
+    }),
   },
   wsServer
 );
@@ -88,7 +95,10 @@ app.use('/graphql', express.json(), async (req, res) => {
       search,
       body: req.body,
     },
-    context: async () => ({ pubsub }),
+    context: async (): Promise<Context> => ({
+      pubsub,
+      userId: userIdFromAuthHeader(req.headers.authorization),
+    }),
   });
 
   if (result.status) res.status(result.status);

@@ -51,21 +51,26 @@ export const typeDefs = `#graphql
     name: String! 
   }
 
+  type AuthPayload {
+    token: String!
+    player: Player!
+  }
+
   type Query {
     game(id: ID!): Game
   }
 
   type Mutation {
-    newGame(userId: ID!): Game!
-    makeMove(gameId: ID!, userId: ID!, row: Int!, col: Int!): Game!
-    passMove(gameId: ID!, userId: ID!): Game!
-    registerPlayer(name: String!): Player!
-    sayHello(gameId: ID!, userId: ID!, message: String!): Boolean!
-    joinAsOpponent(gameId: ID!, userId: ID!): Boolean!
+    newGame: Game!
+    makeMove(gameId: ID!, row: Int!, col: Int!): Game!
+    passMove(gameId: ID!): Game!
+    registerPlayer(name: String!): AuthPayload!
+    sayHello(gameId: ID!, message: String!): Boolean!
+    joinAsOpponent(gameId: ID!): Boolean!
   }
   
   type Subscription {
-    joinGame(gameId: ID!, playerId: ID!): SubscriptionMessage!
+    joinGame(gameId: ID!): SubscriptionMessage!
   }
 
   type SubscriptionMessage {

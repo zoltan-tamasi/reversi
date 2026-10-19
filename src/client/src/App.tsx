@@ -14,6 +14,7 @@ import {
   SAY_HELLO,
   JOIN_AS_OPPONENT,
 } from './graphql';
+import { setAuthToken } from './apollo';
 
 type UIStatus = 'NOT_REGISTERED' | 'NOT_STARTED' | 'IN_GAME';
 
@@ -30,7 +31,7 @@ const GameObserver: React.FC<GameObserverProps> = (props) => {
   });
   const [game, setGame] = useState<Game | null>(null);
   const { data, loading } = useSubscription<{ joinGame: { game: Game | null; message: string | null } }>(JOIN_GAME, {
-    variables: { gameId: props.gameId ?? '', playerId: props.userId ?? '' },
+    variables: { gameId: props.gameId ?? '' },
     onError: (error) => {
       console.error('Subscription error:', error);
     },
@@ -66,9 +67,10 @@ export default function App() {
   const [uiStatus, setUiStatus] = useState<UIStatus>('NOT_REGISTERED');
   const [gameToJoinId, setGameToJoinId] = useState<string | null>(null);
 
-  const [registerPlayer] = useMutation<{ registerPlayer: { id: string } }>(REGISTER_PLAYER, {
+  const [registerPlayer] = useMutation<{ registerPlayer: { token: string; player: { id: string } } }>(REGISTER_PLAYER, {
     onCompleted: (result) => {
-      setUserId(result.registerPlayer.id);
+      setAuthToken(result.registerPlayer.token);
+      setUserId(result.registerPlayer.player.id);
       setUiStatus('NOT_STARTED');
     }
   });
@@ -94,13 +96,13 @@ export default function App() {
 
   function onPlay(row: number, col: number) {
     if (game) {
-      void makeMove({ variables: { gameId: game.id, userId: userId, row, col } });
+      void makeMove({ variables: { gameId: game.id, row, col } });
     }
   }
 
   function onPass() {
     if (game) {
-      void passMove({ variables: { gameId: game.id, userId } });
+      void passMove({ variables: { gameId: game.id } });
     }
   }
 
@@ -120,8 +122,8 @@ export default function App() {
     } 
     setUiStatus('IN_GAME');
     setGameId(id);
-    sayHello({ variables: { gameId: id, userId: userId, message: "Hello, world!" } });
-    joinAsOpponent({ variables: { gameId: id, userId: userId } });
+    sayHello({ variables: { gameId: id, message: "Hello, world!" } });
+    joinAsOpponent({ variables: { gameId: id } });
   }
 
   return (
@@ -146,7 +148,7 @@ export default function App() {
         <>
           {userId ? <p>Logged in as: {playerName}</p> : null}
           <button type="button" onClick={() => {
-            newGame({ variables: { userId: userId } });
+            newGame();
           }} disabled={creating}>
             Start new game
           </button>
@@ -175,11 +177,11 @@ export default function App() {
               {loading ? <p>Loading...</p> : <p>Game loaded.</p>}
               Game ID: {game?.id ?? 'unknown'}
               <GameInfo game={game} userId={userId} onNewGame={() => {
-                newGame({ variables: { userId: userId } });
+                newGame();
               }} onPass={onPass} />
               <Board game={game} userId={userId} onPlay={onPlay} />
               <button type="button" onClick={() => {
-                sayHello({ variables: { gameId: gameToJoinId, userId: userId, message: "Hello, world!" } });
+                sayHello({ variables: { gameId: gameToJoinId, message: "Hello, world!" } });
               }}>
                 Say Hello
               </button>
