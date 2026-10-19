@@ -177,7 +177,7 @@ export default function App() {
               <GameInfo game={game} userId={userId} onNewGame={() => {
                 newGame({ variables: { userId: userId } });
               }} onPass={onPass} />
-              <Board game={game} onPlay={onPlay} />
+              <Board game={game} userId={userId} onPlay={onPlay} />
               <button type="button" onClick={() => {
                 sayHello({ variables: { gameId: gameToJoinId, userId: userId, message: "Hello, world!" } });
               }}>
