@@ -96,6 +96,7 @@ export const REGISTER_PLAYER = gql`
         id
         name
       }
+      error
     }
   }
 `;

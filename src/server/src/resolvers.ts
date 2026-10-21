@@ -12,6 +12,8 @@ type UserSession = {
   color: Player['color'];
 };
 
+export type ErrorType = 'PLAYER_NAME_ALREADY_EXISTS' | 'UNKNOWN_ERROR';
+
 export type Context = {
   pubsub: PubSub;
   // The raw session token sent by the client, whether or not it is valid.
@@ -43,9 +45,16 @@ export const resolvers = {
     registerPlayer: (
       _parent: unknown,
       { name }: { name: string }
-    ): { token: string; player: Player } => {
-      const player = store.registerPlayer(name);
-      return { token: createSession(player.id), player };
+    ): { token: string; player: Player, error: ErrorType | null } => {
+      const response = store.registerPlayer(name);
+      if (response.success) {
+        const player = response.data;
+        return { token: createSession(player.id), player, error: null };
+      }
+      const error = response.error;
+      const player = { id: '', name: '', currentGameId: null, color: null };
+
+      return { token: "", player, error: error };
     },
 
     newGame: (

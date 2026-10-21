@@ -62,6 +62,11 @@ export const typeDefs = `#graphql
   type AuthPayload {
     token: String!
     player: Player!
+    error: ErrorType
+  }
+
+  enum ErrorType {
+    PLAYER_NAME_ALREADY_EXISTS
   }
 
   type Query {

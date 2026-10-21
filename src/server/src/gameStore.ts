@@ -12,6 +12,7 @@ import {
   winner
 } from './game/reversi.js';
 import type { Game, Player as Color } from './game/reversi.js';
+import { ErrorType } from './resolvers.js';
 
 export type Player = {
   id: string;
@@ -20,10 +21,33 @@ export type Player = {
   color: Color | null;
 }
 
+export type Response<T> = SuccessResponse<T> | ErrorResponse;
+
+export type SuccessResponse<T> = {
+  success: true;
+  data: T;
+  error: null;
+}
+
+export type ErrorResponse = {
+  success: false;
+  data: null;
+  error: ErrorType;
+}
+
+const playerNames = new Set<string>();
 const players = new Map<string, Player>();
 const games = new Map<string, Game>();
 
-export function registerPlayer(name: string): Player {
+export function registerPlayer(name: string): Response<Player> {
+  if (playerNames.has(name)) {
+    return {
+      success: false,
+      data: null,
+      error: 'PLAYER_NAME_ALREADY_EXISTS'
+    };
+  }
+  playerNames.add(name);
   const player: Player = {
     id: randomUUID(),
     name,
@@ -32,7 +56,11 @@ export function registerPlayer(name: string): Player {
   };
 
   players.set(player.id, player);
-  return player;
+  return {
+    success: true,
+    data: player,
+    error: null
+  };
 }
 
 export function getPlayer(id: string): Player | null {

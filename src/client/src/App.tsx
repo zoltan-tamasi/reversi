@@ -20,6 +20,8 @@ import {
 } from './graphql';
 import { getAuthToken, setAuthToken } from './apollo';
 
+export type ErrorType = 'PLAYER_NAME_ALREADY_EXISTS' | 'UNKNOWN_ERROR';
+
 type UIStatus = 'NOT_REGISTERED' | 'NOT_STARTED' | 'IN_GAME';
 
 type ChatMessage = { sender: string | null; text: string };
@@ -65,7 +67,6 @@ const GameObserver: React.FC<GameObserverProps> = (props) => {
     console.error('Error loading subscription:', error);
   }
 
-  
   console.log(loading ? "Loading subscription..." : `Subscription active. Last data received at: ${new Date().toLocaleTimeString()}`);
 };
 
@@ -77,6 +78,7 @@ export default function App() {
   const [uiStatus, setUiStatus] = useState<UIStatus>('NOT_REGISTERED');
   const [gameToJoinId, setGameToJoinId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
+  const [registerError, setRegisterError] = useState<ErrorType | null>(null);
   const [receivedMessages, setReceivedMessages] = useState<ChatMessage[]>([]);
   const sessionRestored = useRef(false);
 
@@ -110,8 +112,14 @@ export default function App() {
   // Ignore a color that belongs to a game other than the one on screen.
   const myColor = session && game && session.currentGameId === game.id ? session.color : null;
 
-  const [registerPlayer] = useMutation<{ registerPlayer: { token: string } }>(REGISTER_PLAYER, {
+  const [registerPlayer] = useMutation<{ registerPlayer: { token: string; error: ErrorType | null } }>(REGISTER_PLAYER, {
     onCompleted: (result) => {
+      if (result.registerPlayer.error !== null) {
+        console.error('Error registering player:', result.registerPlayer.error);
+        setRegisterError(result.registerPlayer.error);
+        return;
+      }
+
       setAuthToken(result.registerPlayer.token);
       setUiStatus('NOT_STARTED');
     }
@@ -228,18 +236,30 @@ export default function App() {
       <main className="mx-auto flex w-[min(90vw,480px)] flex-col gap-4 py-8 text-center">
         {restoringSession ? <p>Restoring session…</p> : null}
         {uiStatus === 'NOT_REGISTERED' && !restoringSession ? (
-          <div className="flex flex-row gap-2">
-            <label className="input grow">
-              <span className="label">Player name</span>
-              <input
-                type="text"
-                value={playerName}
-                onChange={(event) => setPlayerName(event.target.value)}
-              />
-            </label>
-            <button type="button" onClick={onRegister} className="btn btn-primary">
-              Register player
-            </button>
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-row gap-2">
+              <label className={`input grow ${registerError ? 'input-error' : ''}`}>
+                <span className="label">Player name</span>
+                <input
+                  type="text"
+                  value={playerName}
+                  onChange={(event) => {
+                    setPlayerName(event.target.value);
+                    setRegisterError(null);
+                  }}
+                />
+              </label>
+              <button type="button" onClick={onRegister} className="btn btn-primary">
+                Register player
+              </button>
+            </div>
+            {registerError ? (
+              <p className="text-left text-error">
+                {registerError === 'PLAYER_NAME_ALREADY_EXISTS'
+                  ? 'This player name is already taken. Please choose another one.'
+                  : 'Registration failed. Please try again.'}
+              </p>
+            ) : null}
           </div>
         ) : null}
         {uiStatus === 'NOT_STARTED' ? (
