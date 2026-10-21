@@ -12,7 +12,7 @@ import { WebSocketServer } from 'ws';
 import { resolvers } from './resolvers.js';
 import type { Context } from './resolvers.js';
 import { typeDefs } from './schema.js';
-import { userIdFromAuthHeader } from './sessionStore.js';
+import { tokenFromAuthHeader, userIdFromAuthHeader } from './sessionStore.js';
 
 const app = express();
 
@@ -47,6 +47,7 @@ const serverCleanup = useServer(
     // token in the connection_init payload instead.
     context: async (ctx): Promise<Context> => ({
       pubsub,
+      token: tokenFromAuthHeader(ctx.connectionParams?.authorization as string | undefined),
       userId: userIdFromAuthHeader(ctx.connectionParams?.authorization as string | undefined),
     }),
   },
@@ -97,6 +98,7 @@ app.use('/graphql', express.json(), async (req, res) => {
     },
     context: async (): Promise<Context> => ({
       pubsub,
+      token: tokenFromAuthHeader(req.headers.authorization),
       userId: userIdFromAuthHeader(req.headers.authorization),
     }),
   });

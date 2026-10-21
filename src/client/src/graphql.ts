@@ -148,3 +148,9 @@ export const LEAVE_GAME = gql`
     leaveGame
   }
 `;
+
+export const LOGOUT = gql`
+  mutation Logout {
+    logout
+  }
+`;

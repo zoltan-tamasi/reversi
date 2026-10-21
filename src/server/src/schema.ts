@@ -78,6 +78,7 @@ export const typeDefs = `#graphql
     sayHello(gameId: ID!, message: String!): Boolean!
     joinAsOpponent(gameId: ID!): Boolean!
     leaveGame: Boolean!
+    logout: Boolean!
   }
   
   type Subscription {

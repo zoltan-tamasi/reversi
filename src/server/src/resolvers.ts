@@ -4,7 +4,7 @@ import { legalMoves, scores } from './game/reversi.js';
 import type { Game } from './game/reversi.js';
 import type { Player } from './gameStore.js';
 import * as store from './gameStore.js';
-import { createSession } from './sessionStore.js';
+import { createSession, deleteSession } from './sessionStore.js';
 
 type UserSession = {
   player: Player;
@@ -14,6 +14,8 @@ type UserSession = {
 
 export type Context = {
   pubsub: PubSub;
+  // The raw session token sent by the client, whether or not it is valid.
+  token: string | null;
   // Resolved from the session token; null when the request is unauthenticated.
   userId: string | null;
 };
@@ -98,6 +100,13 @@ export const resolvers = {
 
     leaveGame: (_parent: unknown, _args: unknown, context: Context): boolean => {
       store.leaveGame(requireUser(context));
+      return true;
+    },
+
+    logout: (_parent: unknown, _args: unknown, context: Context): boolean => {
+      if (context.token) {
+        deleteSession(context.token);
+      }
       return true;
     }
 

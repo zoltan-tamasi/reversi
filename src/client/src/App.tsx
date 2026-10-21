@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useSubscription } from '@apollo/client';
+import { useApolloClient, useMutation, useQuery, useSubscription } from '@apollo/client';
 import { useEffect, useRef, useState } from 'react';
 
 import Board from './components/Board';
@@ -14,6 +14,7 @@ import {
   SAY_HELLO,
   JOIN_AS_OPPONENT,
   LEAVE_GAME,
+  LOGOUT,
   RESTORE_USER_SESSION,
   type UserSession,
 } from './graphql';
@@ -142,6 +143,20 @@ export default function App() {
     refetchQueries: [RESTORE_USER_SESSION]
   });
 
+  const apolloClient = useApolloClient();
+  const [logout] = useMutation<{ logout: boolean }>(LOGOUT);
+
+  async function onLogout() {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+    setAuthToken(null);
+    await apolloClient.clearStore();
+    setUiStatus('NOT_REGISTERED');
+  }
+
   function onLeaveGame() {
     void leaveGame();
     setGame(null);
@@ -193,99 +208,112 @@ export default function App() {
   }
 
   return (
-    <main className="mx-auto flex w-[min(90vw,480px)] flex-col gap-4 py-8 text-center">
-      <h1 className="text-3xl font-bold">Reversi</h1>
-      {restoringSession ? <p>Restoring session…</p> : null}
-      {uiStatus === 'NOT_REGISTERED' && !restoringSession ? (
-        <div className="flex flex-row gap-2">
-          <label className="input grow">
-            <span className="label">Player name</span>
-            <input
-              type="text"
-              value={playerName}
-              onChange={(event) => setPlayerName(event.target.value)}
-            />
-          </label>
-          <button type="button" onClick={onRegister} className="btn btn-primary">
-            Register player
-          </button>
+    <>
+      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-base-200 px-4 py-3 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          {uiStatus !== 'NOT_REGISTERED' ? (
+            <>
+              <p>Logged in as: <span className="font-semibold">{playerName}</span></p>
+              {uiStatus === 'NOT_STARTED' ? (
+                <button type="button" onClick={() => void onLogout()} className="btn btn-outline btn-sm">
+                  Log out
+                </button>
+              ) : null}
+            </>
+          ) : null}
         </div>
-      ) : null}
-      {uiStatus === 'NOT_STARTED' ? (
-        <div className="flex flex-col gap-2">
-          <p>Logged in as: <span className="font-semibold">{playerName}</span></p>
-          <button type="button" onClick={() => {
-            newGame();
-          }} disabled={creating} className="btn btn-primary">
-            Start new game
-          </button>
-          <label className="input w-full">
-            <span className="label">Game ID</span>
-            <input
-              type="text"
-              onChange={(event) => {
-                console.log('Game ID to join:', event.target.value);
-                setGameToJoinId(event.target.value);
-              }}
-            />
-          </label>
-          <button type="button" onClick={() => joinGame(gameToJoinId)} disabled={creating} className="btn btn-primary">
-            Join game
-          </button>
-        </div>
-      ) : null}
-      {uiStatus === 'IN_GAME' ? (
-        <>
-          <GameObserver
-            gameId={gameToJoinId}
-            setGame={setGame}
-            onMessage={(received) => setReceivedMessages((messages) => [...messages, received])}
-          />
-          <div className="flex justify-center gap-2">
-            <button type="button" onClick={() => newGame()} className="btn btn-primary">
-              New game
-            </button>
-            <button type="button" onClick={onLeaveGame} className="btn btn-outline">
-              Leave game
+        <h1 className="text-3xl font-bold">Reversi</h1>
+        <div />
+      </header>
+      <main className="mx-auto flex w-[min(90vw,480px)] flex-col gap-4 py-8 text-center">
+        {restoringSession ? <p>Restoring session…</p> : null}
+        {uiStatus === 'NOT_REGISTERED' && !restoringSession ? (
+          <div className="flex flex-row gap-2">
+            <label className="input grow">
+              <span className="label">Player name</span>
+              <input
+                type="text"
+                value={playerName}
+                onChange={(event) => setPlayerName(event.target.value)}
+              />
+            </label>
+            <button type="button" onClick={onRegister} className="btn btn-primary">
+              Register player
             </button>
           </div>
-          {!game && creating ? (
-            <p>Starting game…</p>
-          ) : (
-            <>
-              {loading ? <p>Loading...</p> : <p>Game loaded.</p>}
-              <p className="text-sm opacity-70">Game ID: <code>{game?.id ?? 'unknown'}</code></p>
-              <GameInfo game={game} myColor={myColor} onPass={onPass} />
-              <div className="relative">
-                <Board game={game} myColor={myColor} onPlay={onPlay} />
-                <div className="mt-4 flex flex-col gap-2 min-[960px]:absolute min-[960px]:top-0 min-[960px]:left-[calc(100%+1rem)] min-[960px]:mt-0 min-[960px]:w-[200px]">
-                  <button type="button" disabled={!message.trim()} onClick={onSendMessage} className="btn btn-primary">
-                    Send message
-                  </button>
-                  <input
-                    type="text"
-                    className="input w-full"
-                    value={message}
-                    onChange={(event) => setMessage(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        onSendMessage();
-                      }
-                    }}
-                  />
-                  <ul className="max-h-[300px] overflow-y-auto text-left">
-                    {receivedMessages.map((received, index) => (
-                      <li key={index} className="border-b border-base-300 py-1 wrap-anywhere">
-                        <strong>{received.sender ?? 'Unknown'}:</strong> {received.text}
-                      </li>
-                    ))}
-                  </ul>
+        ) : null}
+        {uiStatus === 'NOT_STARTED' ? (
+          <div className="flex flex-col gap-2">
+            <button type="button" onClick={() => {
+              newGame();
+            }} disabled={creating} className="btn btn-primary">
+              Start new game
+            </button>
+            <label className="input w-full">
+              <span className="label">Game ID</span>
+              <input
+                type="text"
+                onChange={(event) => {
+                  console.log('Game ID to join:', event.target.value);
+                  setGameToJoinId(event.target.value);
+                }}
+              />
+            </label>
+            <button type="button" onClick={() => joinGame(gameToJoinId)} disabled={creating} className="btn btn-primary">
+              Join game
+            </button>
+          </div>
+        ) : null}
+        {uiStatus === 'IN_GAME' ? (
+          <>
+            <GameObserver
+              gameId={gameToJoinId}
+              setGame={setGame}
+              onMessage={(received) => setReceivedMessages((messages) => [...messages, received])}
+            />
+            <div className="flex justify-center gap-2">
+              <button type="button" onClick={onLeaveGame} className="btn btn-primary">
+                Leave game
+              </button>
+            </div>
+            {!game && creating ? (
+              <p>Starting game…</p>
+            ) : (
+              <>
+                {loading ? <p>Loading...</p> : <p>Game loaded.</p>}
+                <p className="text-sm opacity-70">Game ID: <code>{game?.id ?? 'unknown'}</code></p>
+                <GameInfo game={game} myColor={myColor} onPass={onPass} />
+                <div className="relative">
+                  <Board game={game} myColor={myColor} onPlay={onPlay} />
+                  <div className="mt-4 flex flex-col gap-2 min-[960px]:absolute min-[960px]:top-0 min-[960px]:left-[calc(100%+1rem)] min-[960px]:mt-0 min-[960px]:w-[200px]">
+                    <button type="button" disabled={!message.trim()} onClick={onSendMessage} className="btn btn-primary">
+                      Send message
+                    </button>
+                    <input
+                      type="text"
+                      className="input w-full"
+                      value={message}
+                      onChange={(event) => setMessage(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          onSendMessage();
+                        }
+                      }}
+                    />
+                    <ul className="max-h-[300px] overflow-y-auto text-left">
+                      {receivedMessages.map((received, index) => (
+                        <li key={index} className="border-b border-base-300 py-1 wrap-anywhere">
+                          <strong>{received.sender ?? 'Unknown'}:</strong> {received.text}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
-        </>
-      ) : null}
-    </main>
+              </>
+            )}
+          </>
+        ) : null}
+      </main>
+    </>
   );
 }

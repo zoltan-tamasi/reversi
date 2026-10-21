@@ -15,8 +15,17 @@ export function getUserId(token: string): string | null {
   return sessions.get(token) ?? null;
 }
 
+export function deleteSession(token: string): void {
+  sessions.delete(token);
+}
+
 // Accepts an `Authorization` header value of the form "Bearer <token>".
-export function userIdFromAuthHeader(header: string | undefined | null): string | null {
+export function tokenFromAuthHeader(header: string | undefined | null): string | null {
   const match = /^Bearer\s+(\S+)$/i.exec(header ?? '');
-  return match ? getUserId(match[1]) : null;
+  return match ? match[1] : null;
+}
+
+export function userIdFromAuthHeader(header: string | undefined | null): string | null {
+  const token = tokenFromAuthHeader(header);
+  return token ? getUserId(token) : null;
 }
