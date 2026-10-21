@@ -3,11 +3,10 @@ import type { Disc, Game } from '../graphql';
 type GameInfoProps = {
   game: Game | null;
   myColor: Disc | null;
-  onNewGame: () => void;
   onPass: () => void;
 };
 
-export default function GameInfo({ game, myColor, onNewGame, onPass }: GameInfoProps) {
+export default function GameInfo({ game, myColor, onPass }: GameInfoProps) {
   if (!game) return null;
 
   const { scores, playerToTakeNextMove, status, winner, legalMoves } = game;
@@ -51,9 +50,6 @@ export default function GameInfo({ game, myColor, onNewGame, onPass }: GameInfoP
             Pass
           </button>
         )}
-        <button type="button" onClick={onNewGame}>
-          New game
-        </button>
       </div>
     </div>
   );

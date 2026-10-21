@@ -86,6 +86,7 @@ export const typeDefs = `#graphql
 
   type SubscriptionMessage {
     message: String
+    sender: String
     game: Game
   }
 `;

@@ -81,8 +81,8 @@ export const resolvers = {
       { gameId, message }: { gameId: string; message: string },
       context: Context
     ): boolean => {
-      requireUser(context);
-      context.pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game: store.getGame(gameId), message } });
+      const sender = store.getPlayer(requireUser(context))?.name ?? null;
+      context.pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game: store.getGame(gameId), message, sender } });
       return true;
     },
 

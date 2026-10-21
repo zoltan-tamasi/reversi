@@ -125,6 +125,7 @@ export const JOIN_GAME = gql`
         ...GameFields
       }
       message
+      sender
     } 
   }
   ${GAME_FIELDS}

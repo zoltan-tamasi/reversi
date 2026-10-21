@@ -21,9 +21,12 @@ import { getAuthToken, setAuthToken } from './apollo';
 
 type UIStatus = 'NOT_REGISTERED' | 'NOT_STARTED' | 'IN_GAME';
 
+type ChatMessage = { sender: string | null; text: string };
+
 type GameObserverProps = {
   gameId: string | null, 
-  setGame: React.Dispatch<React.SetStateAction<Game | null>> 
+  setGame: React.Dispatch<React.SetStateAction<Game | null>>,
+  onMessage: (message: ChatMessage) => void
 };
 
 const GameObserver: React.FC<GameObserverProps> = (props) => {
@@ -32,7 +35,7 @@ const GameObserver: React.FC<GameObserverProps> = (props) => {
     skip: !props.gameId
   });
   const [game, setGame] = useState<Game | null>(null);
-  const { data, loading } = useSubscription<{ joinGame: { game: Game | null; message: string | null } }>(JOIN_GAME, {
+  const { data, loading } = useSubscription<{ joinGame: { game: Game | null; message: string | null; sender: string | null } }>(JOIN_GAME, {
     variables: { gameId: props.gameId ?? '' },
     onError: (error) => {
       console.error('Subscription error:', error);
@@ -42,6 +45,10 @@ const GameObserver: React.FC<GameObserverProps> = (props) => {
       const game = data.data?.joinGame.game;
       if (game) {
         props.setGame(game);
+      }
+      const message = data.data?.joinGame.message;
+      if (message) {
+        props.onMessage({ sender: data.data?.joinGame.sender ?? null, text: message });
       }
     },
   });
@@ -54,10 +61,11 @@ const GameObserver: React.FC<GameObserverProps> = (props) => {
   }, [gameData, props]);
 
   if (error) {
-    return <p>Error loading subscription: {error.message}</p>;
+    console.error('Error loading subscription:', error);
   }
 
-  return loading ? <p>Loading subscription...</p> : <p>Subscription active. Last data received at: {new Date().toLocaleTimeString()}</p>;
+  
+  console.log(loading ? "Loading subscription..." : `Subscription active. Last data received at: ${new Date().toLocaleTimeString()}`);
 };
 
 export default function App() {
@@ -67,6 +75,8 @@ export default function App() {
   const [playerName, setPlayerName] = useState('Player 1');
   const [uiStatus, setUiStatus] = useState<UIStatus>('NOT_REGISTERED');
   const [gameToJoinId, setGameToJoinId] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
+  const [receivedMessages, setReceivedMessages] = useState<ChatMessage[]>([]);
   const sessionRestored = useRef(false);
 
   // Restore the session from a stored token. If the server no longer knows
@@ -113,6 +123,7 @@ export default function App() {
       setGameToJoinId(gameId);
       setGameId(gameId);
       setGame(result.newGame);
+      setReceivedMessages([]);
       setUiStatus('IN_GAME');
       setLoading(false);
     },
@@ -136,7 +147,17 @@ export default function App() {
     setGame(null);
     setGameId(null);
     setGameToJoinId(null);
+    setReceivedMessages([]);
     setUiStatus('NOT_STARTED');
+  }
+
+  function onSendMessage() {
+    const text = message.trim();
+    if (!text) {
+      return;
+    }
+    sayHello({ variables: { gameId: gameToJoinId, message: text } });
+    setMessage('');
   }
 
   function onPlay(row: number, col: number) {
@@ -215,7 +236,14 @@ export default function App() {
       ) : null}
       {uiStatus === 'IN_GAME' ? (
         <>
-          <GameObserver gameId={gameToJoinId} setGame={setGame} />
+          <GameObserver
+            gameId={gameToJoinId}
+            setGame={setGame}
+            onMessage={(received) => setReceivedMessages((messages) => [...messages, received])}
+          />
+          <button type="button" onClick={() => newGame()}>
+            New game
+          </button>
           <button type="button" onClick={onLeaveGame}>
             Leave game
           </button>
@@ -225,20 +253,32 @@ export default function App() {
             <>
               {loading ? <p>Loading...</p> : <p>Game loaded.</p>}
               Game ID: {game?.id ?? 'unknown'}
-              <GameInfo game={game} myColor={myColor} onNewGame={() => {
-                newGame();
-              }} onPass={onPass} />
-              <Board game={game} myColor={myColor} onPlay={onPlay} />
-              <button type="button" onClick={() => {
-                sayHello({ variables: { gameId: gameToJoinId, message: "Hello, world!" } });
-              }}>
-                Say Hello
-              </button>
-              <button type="button" onClick={() => {
-                
-              }}>
-                Join Game
-              </button>
+              <GameInfo game={game} myColor={myColor} onPass={onPass} />
+              <div className="board-area">
+                <Board game={game} myColor={myColor} onPlay={onPlay} />
+                <div className="message-panel">
+                  <button type="button" disabled={!message.trim()} onClick={onSendMessage}>
+                    Send message
+                  </button>
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={(event) => setMessage(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        onSendMessage();
+                      }
+                    }}
+                  />
+                  <ul className="messages">
+                    {receivedMessages.map((received, index) => (
+                      <li key={index}>
+                        <strong>{received.sender ?? 'Unknown'}:</strong> {received.text}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </>
           )}
         </>
