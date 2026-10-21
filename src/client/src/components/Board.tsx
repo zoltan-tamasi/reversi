@@ -16,7 +16,7 @@ export default function Board({ game, myColor, onPlay }: BoardProps) {
   );
 
   return (
-    <div className="board" role="grid" aria-label="Reversi board">
+    <div className="grid aspect-square grid-cols-8 gap-0.5 rounded-md border-2 border-board-line bg-board-line" role="grid" aria-label="Reversi board">
       {game.board.map((line, row) =>
         line.map((disc, col) => (
           <Cell

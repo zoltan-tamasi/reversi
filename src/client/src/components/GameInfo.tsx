@@ -1,4 +1,5 @@
 import type { Disc, Game } from '../graphql';
+import DiscPiece from './DiscPiece';
 
 type GameInfoProps = {
   game: Game | null;
@@ -15,26 +16,26 @@ export default function GameInfo({ game, myColor, onPass }: GameInfoProps) {
   const side = myColor;
 
   return (
-    <div className="info">
+    <div className="mb-4 flex flex-col gap-2">
       {side ? (
-        <p className="side">
-          <span className={`disc ${side.toLowerCase()}`} /> You are playing {label(side)}
+        <p className="inline-flex items-center justify-center gap-1.5 font-semibold">
+          {side !== 'EMPTY' && <DiscPiece color={side} className="size-[1.1rem]" />} You are playing {label(side)}
         </p>
       ) : (
-        status !== 'WAITING_FOR_PLAYERS' && <p className="side">You are watching</p>
+        status !== 'WAITING_FOR_PLAYERS' && <p className="font-semibold">You are watching</p>
       )}
 
-      <div className="scores">
-        <span className="score">
-          <span className="disc black" /> {scores.black}
+      <div className="flex justify-center gap-6 text-xl font-semibold">
+        <span className="inline-flex items-center gap-1.5">
+          <DiscPiece color="BLACK" className="size-[1.1rem]" /> {scores.black}
         </span>
-        <span className="score">
-          <span className="disc white" /> {scores.white}
+        <span className="inline-flex items-center gap-1.5">
+          <DiscPiece color="WHITE" className="size-[1.1rem]" /> {scores.white}
         </span>
       </div>
 
       {status === 'WAITING_FOR_PLAYERS' && <p>Waiting for players…</p>}
-      <p className="status">
+      <p className="text-lg">
         {finished
           ? winner === 'EMPTY'
             ? "It's a draw!"
@@ -44,9 +45,9 @@ export default function GameInfo({ game, myColor, onPass }: GameInfoProps) {
           : `${label(playerToTakeNextMove)} to move`}
       </p>
 
-      <div className="actions">
+      <div className="flex justify-center gap-2">
         {canPass && (
-          <button type="button" onClick={onPass}>
+          <button type="button" onClick={onPass} className="btn btn-primary">
             Pass
           </button>
         )}

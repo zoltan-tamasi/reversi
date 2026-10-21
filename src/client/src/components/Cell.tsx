@@ -1,4 +1,5 @@
 import type { Disc } from '../graphql';
+import DiscPiece from './DiscPiece';
 
 type CellProps = {
   disc: Disc;
@@ -12,14 +13,14 @@ export default function Cell({ disc, playable, onPlay }: CellProps) {
   return (
     <button
       type="button"
-      className="cell"
+      className="flex aspect-square items-center justify-center bg-board p-0 enabled:cursor-pointer"
       role="gridcell"
       disabled={!playable}
       onClick={onPlay}
       aria-label={hasDisc ? disc.toLowerCase() : playable ? 'playable' : 'empty'}
     >
-      {hasDisc && <span className={`disc ${disc.toLowerCase()}`} />}
-      {!hasDisc && playable && <span className="hint" />}
+      {hasDisc && <DiscPiece color={disc} />}
+      {!hasDisc && playable && <span className="size-[28%] rounded-full bg-white/35" />}
     </button>
   );
 }

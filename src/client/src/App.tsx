@@ -193,34 +193,34 @@ export default function App() {
   }
 
   return (
-    <main className="app">
-      <h1>Reversi</h1>
+    <main className="mx-auto flex w-[min(90vw,480px)] flex-col gap-4 py-8 text-center">
+      <h1 className="text-3xl font-bold">Reversi</h1>
       {restoringSession ? <p>Restoring session…</p> : null}
       {uiStatus === 'NOT_REGISTERED' && !restoringSession ? (
-        <div>
-          <label>
-            Player name
+        <div className="flex flex-row gap-2">
+          <label className="input grow">
+            <span className="label">Player name</span>
             <input
               type="text"
               value={playerName}
               onChange={(event) => setPlayerName(event.target.value)}
             />
           </label>
-          <button type="button" onClick={onRegister}>
+          <button type="button" onClick={onRegister} className="btn btn-primary">
             Register player
           </button>
         </div>
       ) : null}
       {uiStatus === 'NOT_STARTED' ? (
-        <>
-          <p>Logged in as: {playerName}</p>
+        <div className="flex flex-col gap-2">
+          <p>Logged in as: <span className="font-semibold">{playerName}</span></p>
           <button type="button" onClick={() => {
             newGame();
-          }} disabled={creating}>
+          }} disabled={creating} className="btn btn-primary">
             Start new game
           </button>
-          <label>
-            Game ID
+          <label className="input w-full">
+            <span className="label">Game ID</span>
             <input
               type="text"
               onChange={(event) => {
@@ -229,10 +229,10 @@ export default function App() {
               }}
             />
           </label>
-          <button type="button" onClick={() => joinGame(gameToJoinId)} disabled={creating}>
+          <button type="button" onClick={() => joinGame(gameToJoinId)} disabled={creating} className="btn btn-primary">
             Join game
           </button>
-        </>
+        </div>
       ) : null}
       {uiStatus === 'IN_GAME' ? (
         <>
@@ -241,27 +241,30 @@ export default function App() {
             setGame={setGame}
             onMessage={(received) => setReceivedMessages((messages) => [...messages, received])}
           />
-          <button type="button" onClick={() => newGame()}>
-            New game
-          </button>
-          <button type="button" onClick={onLeaveGame}>
-            Leave game
-          </button>
+          <div className="flex justify-center gap-2">
+            <button type="button" onClick={() => newGame()} className="btn btn-primary">
+              New game
+            </button>
+            <button type="button" onClick={onLeaveGame} className="btn btn-outline">
+              Leave game
+            </button>
+          </div>
           {!game && creating ? (
             <p>Starting game…</p>
           ) : (
             <>
               {loading ? <p>Loading...</p> : <p>Game loaded.</p>}
-              Game ID: {game?.id ?? 'unknown'}
+              <p className="text-sm opacity-70">Game ID: <code>{game?.id ?? 'unknown'}</code></p>
               <GameInfo game={game} myColor={myColor} onPass={onPass} />
-              <div className="board-area">
+              <div className="relative">
                 <Board game={game} myColor={myColor} onPlay={onPlay} />
-                <div className="message-panel">
-                  <button type="button" disabled={!message.trim()} onClick={onSendMessage}>
+                <div className="mt-4 flex flex-col gap-2 min-[960px]:absolute min-[960px]:top-0 min-[960px]:left-[calc(100%+1rem)] min-[960px]:mt-0 min-[960px]:w-[200px]">
+                  <button type="button" disabled={!message.trim()} onClick={onSendMessage} className="btn btn-primary">
                     Send message
                   </button>
                   <input
                     type="text"
+                    className="input w-full"
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
                     onKeyDown={(event) => {
@@ -270,9 +273,9 @@ export default function App() {
                       }
                     }}
                   />
-                  <ul className="messages">
+                  <ul className="max-h-[300px] overflow-y-auto text-left">
                     {receivedMessages.map((received, index) => (
-                      <li key={index}>
+                      <li key={index} className="border-b border-base-300 py-1 wrap-anywhere">
                         <strong>{received.sender ?? 'Unknown'}:</strong> {received.text}
                       </li>
                     ))}
