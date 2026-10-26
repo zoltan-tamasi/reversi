@@ -32,7 +32,7 @@ type GameObserverProps = {
   onMessage: (message: ChatMessage) => void
 };
 
-const GameObserver: React.FC<GameObserverProps> = (props) => {
+const GameObserver: React.FC<GameObserverProps> = (props): React.ReactNode => {
   const { loading: gameLoading, error, data: gameData } = useQuery<{ game: Game | null }>(GET_GAME, {
     variables: { id: props.gameId ?? '' },
     skip: !props.gameId
@@ -68,6 +68,8 @@ const GameObserver: React.FC<GameObserverProps> = (props) => {
   }
 
   console.log(loading ? "Loading subscription..." : `Subscription active. Last data received at: ${new Date().toLocaleTimeString()}`);
+
+  return null; // This component does not render anything itself
 };
 
 export default function App() {
