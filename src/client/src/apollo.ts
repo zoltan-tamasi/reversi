@@ -4,8 +4,14 @@ import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { createClient } from 'graphql-ws';
 
-const httpUri = import.meta.env.VITE_GRAPHQL_URI ?? 'http://localhost:4000/graphql';
-const wsUri = import.meta.env.VITE_GRAPHQL_WS_URI ?? 'ws://localhost:4000/graphql';
+// VITE_GRAPHQL_URI may be relative (e.g. '/graphql' when the server also
+// serves the client), so resolve it against the page and derive the
+// WebSocket URI from it.
+const httpUri = new URL(
+  import.meta.env.VITE_GRAPHQL_URI ?? 'http://localhost:4000/graphql',
+  window.location.href
+).href;
+const wsUri = import.meta.env.VITE_GRAPHQL_WS_URI ?? httpUri.replace(/^http/, 'ws');
 
 const TOKEN_KEY = 'reversi.authToken';
 

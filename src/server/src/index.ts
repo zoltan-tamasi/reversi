@@ -122,6 +122,11 @@ app.use('/graphql', express.json(), async (req, res) => {
   }
 });
 
+// In production (e.g. the Docker image) the server also serves the built client.
+if (process.env.CLIENT_DIST_DIR) {
+  app.use(express.static(process.env.CLIENT_DIST_DIR));
+}
+
 httpServer.listen(port, () => {
   console.log(`🟢 Reversi GraphQL API ready at http://localhost:${port}/`);
 });
