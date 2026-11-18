@@ -4,10 +4,11 @@ import Cell from './Cell';
 type BoardProps = {
   game: Game | null;
   myColor: Disc | null;
+  showLegalMoves: boolean;
   onPlay: (row: number, col: number) => void;
 };
 
-export default function Board({ game, myColor, onPlay }: BoardProps) {
+export default function Board({ game, myColor, showLegalMoves, onPlay }: BoardProps) {
   if (!game) return null;
 
   const thisPlayersTurn = game.status === 'IN_PROGRESS' && myColor === game.playerToTakeNextMove;
@@ -23,6 +24,7 @@ export default function Board({ game, myColor, onPlay }: BoardProps) {
             key={`${row},${col}`}
             disc={disc}
             playable={legal.has(`${row},${col}`)}
+            showHint={showLegalMoves}
             onPlay={() => onPlay(row, col)}
           />
         ))

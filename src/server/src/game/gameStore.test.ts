@@ -11,7 +11,8 @@ import {
   joinGame,
   leaveGame,
   makeMove,
-  registerPlayer
+  registerPlayer,
+  updateSettings
 } from '../gameStore';
 
 let playerCount = 0;
@@ -137,4 +138,16 @@ test('replaying the events reproduces the game after every event of a full game'
   assert.equal(game.status, 'FINISHED');
   assert.equal(game.events.at(-1)?.type, 'END');
   assert.deepEqual(game.events.map((event) => event.seq), game.events.map((_event, index) => index));
+});
+
+test('players start with legal moves displayed and can change their settings', () => {
+  const player = newPlayer('settings');
+  assert.deepEqual(player.settings, { displayLegalMoves: true });
+
+  updateSettings(player.id, { displayLegalMoves: false });
+  assert.equal(getPlayer(player.id)?.settings.displayLegalMoves, false);
+
+  // Omitted settings keep their value.
+  updateSettings(player.id, {});
+  assert.equal(getPlayer(player.id)?.settings.displayLegalMoves, false);
 });

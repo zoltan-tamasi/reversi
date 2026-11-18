@@ -3,7 +3,7 @@ import { PubSub } from 'graphql-subscriptions/dist/pubsub.js';
 import { legalMoves, scores } from '@reversi/shared';
 import type { Game } from '@reversi/shared';
 import { gameTopic, streamGameEvents } from './gameEvents.js';
-import type { Player } from './gameStore.js';
+import type { Player, PlayerSettings } from './gameStore.js';
 import * as store from './gameStore.js';
 import { createSession, deleteSession } from './sessionStore.js';
 
@@ -58,7 +58,7 @@ export const resolvers = {
         return { token: createSession(player.id), player, error: null };
       }
       const error = response.error;
-      const player = { id: '', name: '', currentGameId: null, color: null };
+      const player = { id: '', name: '', currentGameId: null, color: null, settings: store.defaultSettings() };
 
       return { token: "", player, error: error };
     },
@@ -113,6 +113,12 @@ export const resolvers = {
       store.leaveGame(requireUser(context));
       return true;
     },
+
+    saveSettings: (
+      _parent: unknown,
+      { settings }: { settings: Partial<PlayerSettings> },
+      context: Context
+    ): Player => store.updateSettings(requireUser(context), settings),
 
     logout: (_parent: unknown, _args: unknown, context: Context): boolean => {
       if (context.token) {

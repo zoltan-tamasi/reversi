@@ -15,11 +15,21 @@ import {
 import type { EventTypes, Game, Player as Color } from '@reversi/shared';
 import { ErrorType } from './resolvers.js';
 
+export type PlayerSettings = {
+  // Whether the board marks the cells where the player can move.
+  displayLegalMoves: boolean;
+}
+
+export const defaultSettings = (): PlayerSettings => ({
+  displayLegalMoves: true
+});
+
 export type Player = {
   id: string;
   name: string;
   currentGameId: string | null;
   color: Color | null;
+  settings: PlayerSettings;
 }
 
 export type Response<T> = SuccessResponse<T> | ErrorResponse;
@@ -53,7 +63,8 @@ export function registerPlayer(name: string): Response<Player> {
     id: randomUUID(),
     name,
     currentGameId: null,
-    color: null
+    color: null,
+    settings: defaultSettings()
   };
 
   players.set(player.id, player);
@@ -66,6 +77,19 @@ export function registerPlayer(name: string): Response<Player> {
 
 export function getPlayer(id: string): Player | null {
   return players.get(id) ?? null;
+}
+
+// Updates the given settings, leaving the omitted ones unchanged.
+export function updateSettings(playerId: string, settings: Partial<PlayerSettings>): Player {
+  const player = players.get(playerId);
+  if (!player) {
+    throw new Error(`Player not found: ${playerId}`);
+  }
+  const changes = Object.fromEntries(
+    Object.entries(settings).filter(([, value]) => value !== undefined && value !== null)
+  );
+  player.settings = { ...player.settings, ...changes };
+  return player;
 }
 
 export function createGame(userId: string): Game {

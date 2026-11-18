@@ -4,10 +4,12 @@ import DiscPiece from './DiscPiece';
 type CellProps = {
   disc: Disc;
   playable: boolean;
+  // Whether to mark a playable cell with a dot; it is clickable either way.
+  showHint: boolean;
   onPlay: () => void;
 };
 
-export default function Cell({ disc, playable, onPlay }: CellProps) {
+export default function Cell({ disc, playable, showHint, onPlay }: CellProps) {
   const hasDisc = disc === 'BLACK' || disc === 'WHITE';
 
   return (
@@ -20,7 +22,7 @@ export default function Cell({ disc, playable, onPlay }: CellProps) {
       aria-label={hasDisc ? disc.toLowerCase() : playable ? 'playable' : 'empty'}
     >
       {hasDisc && <DiscPiece color={disc} />}
-      {!hasDisc && playable && <span className="size-[28%] rounded-full bg-white/35" />}
+      {!hasDisc && playable && showHint && <span className="size-[28%] rounded-full bg-white/35" />}
     </button>
   );
 }

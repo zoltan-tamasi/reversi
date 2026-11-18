@@ -3,6 +3,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import Board from './components/Board';
 import GameInfo from './components/GameInfo';
+import SettingsDialog from './components/SettingsDialog';
 import {
   GET_GAME,
   MAKE_MOVE,
@@ -17,6 +18,10 @@ import {
   LEAVE_GAME,
   LOGOUT,
   RESTORE_USER_SESSION,
+  SAVE_SETTINGS,
+  DEFAULT_SETTINGS,
+  type Player,
+  type PlayerSettings,
   type UserSession,
 } from './graphql';
 import { getAuthToken, setAuthToken } from './apollo';
@@ -96,6 +101,7 @@ export default function App() {
   const [gameToJoinId, setGameToJoinId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [registerError, setRegisterError] = useState<ErrorType | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const sessionRestored = useRef(false);
 
   // The reducer holds the game's current state, updated event by event.
@@ -132,6 +138,7 @@ export default function App() {
   });
 
   const session = sessionData?.restoreUserSession;
+  const settings = session?.player.settings ?? DEFAULT_SETTINGS;
   // Ignore a color that belongs to a game other than the one on screen.
   const myColor = session && game && session.currentGameId === game.id ? session.color : null;
 
@@ -172,6 +179,24 @@ export default function App() {
   const [leaveGame] = useMutation<{ leaveGame: boolean }>(LEAVE_GAME, {
     refetchQueries: [RESTORE_USER_SESSION]
   });
+
+  // The saved settings are kept on the client in Apollo's cache: the
+  // mutation returns the player, so the cached session (and everything that
+  // reads settings from it) updates once the server confirms the save.
+  // No optimisticResponse: with it, Apollo 3.14 stops delivering cache updates
+  // to the network-only session query, so the board would never re-render.
+  const [saveSettings] = useMutation<{ saveSettings: Player }>(SAVE_SETTINGS);
+
+  function onSaveSettings(changed: PlayerSettings) {
+    if (!session) {
+      return;
+    }
+    // Settings read from the Apollo cache carry a __typename, which the input
+    // type rejects, so send only the setting fields.
+    const input: PlayerSettings = { displayLegalMoves: changed.displayLegalMoves };
+    void saveSettings({ variables: { settings: input } })
+      .catch((error) => console.error('Error saving settings:', error));
+  }
 
   const apolloClient = useApolloClient();
   const [logout] = useMutation<{ logout: boolean }>(LOGOUT);
@@ -253,8 +278,20 @@ export default function App() {
           ) : null}
         </div>
         <h1 className="text-3xl font-bold">Reversi</h1>
-        <div />
+        <div className="flex justify-end">
+          {session ? (
+            <button type="button" onClick={() => setSettingsOpen(true)} className="btn btn-outline btn-sm">
+              Settings
+            </button>
+          ) : null}
+        </div>
       </header>
+      <SettingsDialog
+        open={settingsOpen}
+        settings={settings}
+        onSave={onSaveSettings}
+        onClose={() => setSettingsOpen(false)}
+      />
       <main className="mx-auto flex w-[min(90vw,480px)] flex-col gap-4 py-8 text-center">
         {restoringSession ? <p>Restoring session…</p> : null}
         {uiStatus === 'NOT_REGISTERED' && !restoringSession ? (
@@ -326,7 +363,7 @@ export default function App() {
                 <p className="text-sm opacity-70">Game ID: <code>{game?.id ?? 'unknown'}</code></p>
                 <GameInfo game={game} myColor={myColor} onPass={onPass} />
                 <div className="relative">
-                  <Board game={game} myColor={myColor} onPlay={onPlay} />
+                  <Board game={game} myColor={myColor} showLegalMoves={settings.displayLegalMoves} onPlay={onPlay} />
                   <div className="mt-4 flex flex-col gap-2 min-[960px]:absolute min-[960px]:top-0 min-[960px]:left-[calc(100%+1rem)] min-[960px]:mt-0 min-[960px]:w-[200px]">
                     <button type="button" disabled={!message.trim()} onClick={onSendMessage} className="btn btn-primary">
                       Send message

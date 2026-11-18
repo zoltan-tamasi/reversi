@@ -49,9 +49,19 @@ export const typeDefs = `#graphql
     events: [GameEvent!]!
   }
 
+  type PlayerSettings {
+    displayLegalMoves: Boolean!
+  }
+
+  # Omitted fields keep their current value.
+  input PlayerSettingsInput {
+    displayLegalMoves: Boolean
+  }
+
   type Player {
     id: ID!
-    name: String! 
+    name: String!
+    settings: PlayerSettings!
   }
 
   # Returned by restoreUserSession: who the token belongs to and where they are.
@@ -87,6 +97,8 @@ export const typeDefs = `#graphql
     joinAsOpponent(gameId: ID!): Boolean!
     leaveGame: Boolean!
     logout: Boolean!
+    # Saves the current player's settings and returns the player.
+    saveSettings(settings: PlayerSettingsInput!): Player!
   }
   
   type Subscription {

@@ -33,9 +33,18 @@ export type ChatMessage = {
   text: string;
 };
 
+export type PlayerSettings = {
+  displayLegalMoves: boolean;
+};
+
+export const DEFAULT_SETTINGS: PlayerSettings = {
+  displayLegalMoves: true
+};
+
 export type Player = {
   id: string;
   name: string;
+  settings: PlayerSettings;
 };
 
 export type UserSession = {
@@ -86,6 +95,9 @@ export const RESTORE_USER_SESSION = gql`
       player {
         id
         name
+        settings {
+          displayLegalMoves
+        }
       }
       currentGameId
       color
@@ -100,6 +112,9 @@ export const REGISTER_PLAYER = gql`
       player {
         id
         name
+        settings {
+          displayLegalMoves
+        }
       }
       error
     }
@@ -142,6 +157,18 @@ export const JOIN_AS_OPPONENT = gql`
 export const LEAVE_GAME = gql`
   mutation LeaveGame {
     leaveGame
+  }
+`;
+
+// Returns the player so Apollo updates the cached settings everywhere.
+export const SAVE_SETTINGS = gql`
+  mutation SaveSettings($settings: PlayerSettingsInput!) {
+    saveSettings(settings: $settings) {
+      id
+      settings {
+        displayLegalMoves
+      }
+    }
   }
 `;
 
