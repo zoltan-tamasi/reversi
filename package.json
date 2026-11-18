@@ -23,7 +23,7 @@
     "typecheck": "npm run typecheck --workspace=src/server && npm run typecheck --workspace=src/client",
     "start": "npm run start --workspace=src/server",
     "pretest": "npm run build:shared",
-    "test": "npm run test --workspace=src/shared && npm run test --workspace=src/server"
+    "test": "npm run test --workspace=src/shared && npm run test --workspace=src/server && npm run test --workspace=src/client"
   },
   "engines": {
     "node": ">=20"

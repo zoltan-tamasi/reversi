@@ -1,5 +1,5 @@
 import { useApolloClient, useMutation, useQuery, useSubscription } from '@apollo/client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import Board from './components/Board';
 import GameInfo from './components/GameInfo';
@@ -20,7 +20,7 @@ import {
   type UserSession,
 } from './graphql';
 import { getAuthToken, setAuthToken } from './apollo';
-import { chatMessagesFromEvents, gameFromEvents, mergeEvents } from './gameState';
+import { emptyGameState, gameReducer, toViewGame, type GameAction } from './gameReducer';
 
 export type ErrorType = 'PLAYER_NAME_ALREADY_EXISTS' | 'UNKNOWN_ERROR';
 
@@ -28,41 +28,58 @@ type UIStatus = 'NOT_REGISTERED' | 'NOT_STARTED' | 'IN_GAME';
 
 type GameObserverProps = {
   gameId: string | null,
-  setEvents: React.Dispatch<React.SetStateAction<GameEvent[]>>
+  needsResync: boolean,
+  dispatch: React.Dispatch<GameAction>
 };
 
-// Loads the game's full event list, then subscribes to the events after it.
-const GameObserver: React.FC<GameObserverProps> = ({ gameId, setEvents }): React.ReactNode => {
-  const { error, data: gameData } = useQuery<{ game: { id: string; events: GameEvent[] } | null }>(GET_GAME, {
+// Loads the game's full event log, then subscribes to the events after it.
+// Each event is dispatched to the game reducer, which applies it to the
+// current state. When the reducer detects a gap, the log is loaded again.
+const GameObserver: React.FC<GameObserverProps> = ({ gameId, needsResync, dispatch }): React.ReactNode => {
+  const { error, data: gameData, refetch } = useQuery<{ game: { id: string; events: GameEvent[] } | null }>(GET_GAME, {
     variables: { id: gameId ?? '' },
     skip: !gameId,
     fetchPolicy: 'network-only'
   });
-  const loadedEvents = gameData?.game?.events;
+  const loadedGame = gameData?.game;
   const { loading } = useSubscription<{ joinGame: GameEvent }>(JOIN_GAME, {
-    variables: { gameId: gameId ?? '', afterSeq: (loadedEvents?.length ?? 0) - 1 },
-    skip: !loadedEvents,
+    variables: { gameId: gameId ?? '', afterSeq: (loadedGame?.events.length ?? 0) - 1 },
+    skip: !loadedGame,
     onError: (error) => {
       console.error('Subscription error:', error);
     },
     onData({ data }) {
-      console.log('Subscription data received:', data);
       const event = data.data?.joinGame;
-      //TODO: Don't replay all event, save the incoming on and shoot a React Dispatch with the state
       if (event) {
-        setEvents((current) => mergeEvents(current, [event]));
+        dispatch({ type: 'EVENTS', events: [event] });
       }
     },
   });
 
   useEffect(() => {
-    if (loadedEvents) {
-      setEvents((current) => mergeEvents(current, loadedEvents));
+    if (loadedGame) {
+      dispatch({ type: 'LOADED', gameId: loadedGame.id, events: loadedGame.events });
     }
-  }, [loadedEvents, setEvents]);
+  }, [loadedGame, dispatch]);
+
+  // Dispatch from the refetch result too: if the log has not changed since
+  // the last load, Apollo keeps the same data and the effect above won't run.
+  useEffect(() => {
+    if (!needsResync || !gameId) {
+      return;
+    }
+    refetch()
+      .then((result) => {
+        const game = result.data.game;
+        if (game) {
+          dispatch({ type: 'LOADED', gameId: game.id, events: game.events });
+        }
+      })
+      .catch((error) => console.error('Error resyncing game:', error));
+  }, [needsResync, gameId, refetch, dispatch]);
 
   if (error) {
-    console.error('Error loading subscription:', error);
+    console.error('Error loading game:', error);
   }
 
   console.log(loading ? "Loading subscription..." : `Subscription active. Last data received at: ${new Date().toLocaleTimeString()}`);
@@ -71,7 +88,7 @@ const GameObserver: React.FC<GameObserverProps> = ({ gameId, setEvents }): React
 };
 
 export default function App() {
-  const [events, setEvents] = useState<GameEvent[]>([]);
+  const [gameState, dispatch] = useReducer(gameReducer, emptyGameState);
   const [loading, setLoading] = useState(true);
   const [gameId, setGameId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState('Player 1');
@@ -81,12 +98,12 @@ export default function App() {
   const [registerError, setRegisterError] = useState<ErrorType | null>(null);
   const sessionRestored = useRef(false);
 
-  // Everything shown about the game is derived from its events.
+  // The reducer holds the game's current state, updated event by event.
   const game = useMemo(
-    () => (gameId && events.length > 0 ? gameFromEvents(gameId, events) : null),
-    [gameId, events]
+    () => (gameState.game && gameState.game.id === gameId ? toViewGame(gameState.game) : null),
+    [gameState.game, gameId]
   );
-  const receivedMessages = useMemo(() => chatMessagesFromEvents(events), [events]);
+  const receivedMessages = gameState.messages;
 
   // Restore the session from a stored token. If the server no longer knows
   // the token (e.g. it restarted), drop it and ask the user to register again.
@@ -137,7 +154,7 @@ export default function App() {
       const gameId = result.newGame.id;
       setGameToJoinId(gameId);
       setGameId(gameId);
-      setEvents([]);
+      dispatch({ type: 'RESET' });
       setUiStatus('IN_GAME');
       setLoading(false);
     },
@@ -172,7 +189,7 @@ export default function App() {
 
   function onLeaveGame() {
     void leaveGame();
-    setEvents([]);
+    dispatch({ type: 'RESET' });
     setGameId(null);
     setGameToJoinId(null);
     setUiStatus('NOT_STARTED');
@@ -213,6 +230,7 @@ export default function App() {
       console.log('No game ID provided for joining a game.');
       return;
     } 
+    dispatch({ type: 'RESET' });
     setUiStatus('IN_GAME');
     setGameId(id);
     sayHello({ variables: { gameId: id, message: "Hello, world!" } });
@@ -292,7 +310,8 @@ export default function App() {
           <>
             <GameObserver
               gameId={gameToJoinId}
-              setEvents={setEvents}
+              needsResync={gameState.needsResync}
+              dispatch={dispatch}
             />
             <div className="flex justify-center gap-2">
               <button type="button" onClick={onLeaveGame} className="btn btn-primary">
