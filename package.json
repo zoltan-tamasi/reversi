@@ -5,17 +5,25 @@
   "type": "module",
   "description": "A React + Node.js reversi/othello game with a GraphQL API",
   "workspaces": [
+    "src/shared",
     "src/server",
     "src/client"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=src/server & npm run dev --workspace=src/client",
+    "build:shared": "npm run build --workspace=src/shared",
+    "predev": "npm run build:shared",
+    "dev": "npm run dev --workspace=src/server & npm run dev --workspace=src/client & npm run dev --workspace=src/shared",
+    "dev:shared": "npm run dev --workspace=src/shared",
+    "predev:server": "npm run build:shared",
     "dev:server": "npm run dev --workspace=src/server",
+    "predev:client": "npm run build:shared",
     "dev:client": "npm run dev --workspace=src/client",
-    "build": "npm run build --workspace=src/server && npm run build --workspace=src/client",
-    "typecheck": "npm run typecheck --workspace=src/server",
+    "build": "npm run build:shared && npm run build --workspace=src/server && npm run build --workspace=src/client",
+    "pretypecheck": "npm run build:shared",
+    "typecheck": "npm run typecheck --workspace=src/server && npm run typecheck --workspace=src/client",
     "start": "npm run start --workspace=src/server",
-    "test": "npm run test --workspace=src/server"
+    "pretest": "npm run build:shared",
+    "test": "npm run test --workspace=src/shared && npm run test --workspace=src/server"
   },
   "engines": {
     "node": ">=20"

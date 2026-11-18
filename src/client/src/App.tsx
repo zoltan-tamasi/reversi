@@ -1,5 +1,5 @@
 import { useApolloClient, useMutation, useQuery, useSubscription } from '@apollo/client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import Board from './components/Board';
 import GameInfo from './components/GameInfo';
@@ -11,6 +11,7 @@ import {
   REGISTER_PLAYER,
   JOIN_GAME,
   type Game,
+  type GameEvent,
   SAY_HELLO,
   JOIN_AS_OPPONENT,
   LEAVE_GAME,
@@ -19,49 +20,46 @@ import {
   type UserSession,
 } from './graphql';
 import { getAuthToken, setAuthToken } from './apollo';
+import { chatMessagesFromEvents, gameFromEvents, mergeEvents } from './gameState';
 
 export type ErrorType = 'PLAYER_NAME_ALREADY_EXISTS' | 'UNKNOWN_ERROR';
 
 type UIStatus = 'NOT_REGISTERED' | 'NOT_STARTED' | 'IN_GAME';
 
-type ChatMessage = { sender: string | null; text: string };
-
 type GameObserverProps = {
-  gameId: string | null, 
-  setGame: React.Dispatch<React.SetStateAction<Game | null>>,
-  onMessage: (message: ChatMessage) => void
+  gameId: string | null,
+  setEvents: React.Dispatch<React.SetStateAction<GameEvent[]>>
 };
 
-const GameObserver: React.FC<GameObserverProps> = (props): React.ReactNode => {
-  const { loading: gameLoading, error, data: gameData } = useQuery<{ game: Game | null }>(GET_GAME, {
-    variables: { id: props.gameId ?? '' },
-    skip: !props.gameId
+// Loads the game's full event list, then subscribes to the events after it.
+const GameObserver: React.FC<GameObserverProps> = ({ gameId, setEvents }): React.ReactNode => {
+  const { error, data: gameData } = useQuery<{ game: { id: string; events: GameEvent[] } | null }>(GET_GAME, {
+    variables: { id: gameId ?? '' },
+    skip: !gameId,
+    fetchPolicy: 'network-only'
   });
-  const [game, setGame] = useState<Game | null>(null);
-  const { data, loading } = useSubscription<{ joinGame: { game: Game | null; message: string | null; sender: string | null } }>(JOIN_GAME, {
-    variables: { gameId: props.gameId ?? '' },
+  const loadedEvents = gameData?.game?.events;
+  const { loading } = useSubscription<{ joinGame: GameEvent }>(JOIN_GAME, {
+    variables: { gameId: gameId ?? '', afterSeq: (loadedEvents?.length ?? 0) - 1 },
+    skip: !loadedEvents,
     onError: (error) => {
       console.error('Subscription error:', error);
     },
     onData({ data }) {
       console.log('Subscription data received:', data);
-      const game = data.data?.joinGame.game;
-      if (game) {
-        props.setGame(game);
-      }
-      const message = data.data?.joinGame.message;
-      if (message) {
-        props.onMessage({ sender: data.data?.joinGame.sender ?? null, text: message });
+      const event = data.data?.joinGame;
+      //TODO: Don't replay all event, save the incoming on and shoot a React Dispatch with the state
+      if (event) {
+        setEvents((current) => mergeEvents(current, [event]));
       }
     },
   });
 
   useEffect(() => {
-    if (gameData?.game) {
-      setGame(gameData.game);
-      props.setGame(gameData.game);
+    if (loadedEvents) {
+      setEvents((current) => mergeEvents(current, loadedEvents));
     }
-  }, [gameData, props]);
+  }, [loadedEvents, setEvents]);
 
   if (error) {
     console.error('Error loading subscription:', error);
@@ -73,7 +71,7 @@ const GameObserver: React.FC<GameObserverProps> = (props): React.ReactNode => {
 };
 
 export default function App() {
-  const [game, setGame] = useState<Game | null>(null);
+  const [events, setEvents] = useState<GameEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [gameId, setGameId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState('Player 1');
@@ -81,8 +79,14 @@ export default function App() {
   const [gameToJoinId, setGameToJoinId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [registerError, setRegisterError] = useState<ErrorType | null>(null);
-  const [receivedMessages, setReceivedMessages] = useState<ChatMessage[]>([]);
   const sessionRestored = useRef(false);
+
+  // Everything shown about the game is derived from its events.
+  const game = useMemo(
+    () => (gameId && events.length > 0 ? gameFromEvents(gameId, events) : null),
+    [gameId, events]
+  );
+  const receivedMessages = useMemo(() => chatMessagesFromEvents(events), [events]);
 
   // Restore the session from a stored token. If the server no longer knows
   // the token (e.g. it restarted), drop it and ask the user to register again.
@@ -133,8 +137,7 @@ export default function App() {
       const gameId = result.newGame.id;
       setGameToJoinId(gameId);
       setGameId(gameId);
-      setGame(result.newGame);
-      setReceivedMessages([]);
+      setEvents([]);
       setUiStatus('IN_GAME');
       setLoading(false);
     },
@@ -143,8 +146,8 @@ export default function App() {
     } 
   });
 
-  const [makeMove] = useMutation<{ makeMove: Game }>(MAKE_MOVE);
-  const [passMove] = useMutation<{ passMove: Game }>(PASS_MOVE);
+  const [makeMove] = useMutation<{ makeMove: boolean }>(MAKE_MOVE);
+  const [passMove] = useMutation<{ passMove: boolean }>(PASS_MOVE);
   const [sayHello] = useMutation<{ sayHello: boolean }>(SAY_HELLO);
   const [joinAsOpponent] = useMutation<{ joinAsOpponent: Game }>(JOIN_AS_OPPONENT, {
     refetchQueries: [RESTORE_USER_SESSION]
@@ -169,10 +172,9 @@ export default function App() {
 
   function onLeaveGame() {
     void leaveGame();
-    setGame(null);
+    setEvents([]);
     setGameId(null);
     setGameToJoinId(null);
-    setReceivedMessages([]);
     setUiStatus('NOT_STARTED');
   }
 
@@ -290,8 +292,7 @@ export default function App() {
           <>
             <GameObserver
               gameId={gameToJoinId}
-              setGame={setGame}
-              onMessage={(received) => setReceivedMessages((messages) => [...messages, received])}
+              setEvents={setEvents}
             />
             <div className="flex justify-center gap-2">
               <button type="button" onClick={onLeaveGame} className="btn btn-primary">

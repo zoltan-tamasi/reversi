@@ -5,6 +5,7 @@ FROM node:24-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
+COPY src/shared/package.json src/shared/
 COPY src/server/package.json src/server/
 COPY src/client/package.json src/client/
 RUN npm ci
@@ -22,10 +23,12 @@ ENV NODE_ENV=production \
   CLIENT_DIST_DIR=/app/src/client/dist
 
 COPY package.json package-lock.json ./
+COPY src/shared/package.json src/shared/
 COPY src/server/package.json src/server/
 COPY src/client/package.json src/client/
 RUN npm ci --omit=dev --workspace=src/server && npm cache clean --force
 
+COPY --from=build /app/src/shared/dist src/shared/dist
 COPY --from=build /app/src/server/dist src/server/dist
 COPY --from=build /app/src/client/dist src/client/dist
 

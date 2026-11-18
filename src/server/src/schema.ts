@@ -23,11 +23,14 @@ export const typeDefs = `#graphql
   }
 
   type GameEvent {
+    # The event's position in Game.events.
+    seq: Int!
     type: String!
     player: Disc
     row: Int
     col: Int
     message: String
+    senderName: String
     winner: Disc
     timestamp: Float!
     initiatedBy: ID!
@@ -77,8 +80,8 @@ export const typeDefs = `#graphql
 
   type Mutation {
     newGame: Game!
-    makeMove(gameId: ID!, row: Int!, col: Int!): Game!
-    passMove(gameId: ID!): Game!
+    makeMove(gameId: ID!, row: Int!, col: Int!): Boolean!
+    passMove(gameId: ID!): Boolean!
     registerPlayer(name: String!): AuthPayload!
     sayHello(gameId: ID!, message: String!): Boolean!
     joinAsOpponent(gameId: ID!): Boolean!
@@ -87,12 +90,7 @@ export const typeDefs = `#graphql
   }
   
   type Subscription {
-    joinGame(gameId: ID!): SubscriptionMessage!
-  }
-
-  type SubscriptionMessage {
-    message: String
-    sender: String
-    game: Game
+    # Streams the game's events with a seq above afterSeq: already recorded ones first, then new ones.
+    joinGame(gameId: ID!, afterSeq: Int!): GameEvent!
   }
 `;

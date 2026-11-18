@@ -16,11 +16,12 @@ export type EventTypes =
   | { type: 'START'; }
   | { type: 'MOVE'; player: Player; row: number; col: number }
   | { type: 'PASS'; player: Player }
-  | { type: 'JOIN'; player: Player }
-  | { type: 'MESSAGE'; player: Player; message: string }
+  | { type: 'JOIN'; player: Player | null }  // null means a spectator
+  | { type: 'MESSAGE'; player: Player | null; senderName: string | null; message: string }
   | { type: 'END'; winner: Player | typeof EMPTY };
 
-export type GameEvent = EventTypes & { timestamp: number, initiatedBy: string};
+// `seq` is the event's position in the game's event list.
+export type GameEvent = EventTypes & { seq: number, timestamp: number, initiatedBy: string};
 
 export type Board = Array<Array<CellContent>>;
 
@@ -127,6 +128,18 @@ export function legalMoves(board: Board, player: Player) {
     }
   }
   return moves;
+}
+
+// Who moves after `player`: their opponent, unless the opponent has no legal
+// move, in which case `player` goes again.
+export function nextTurn(board: Board, player: Player): Player {
+  const next = opponent(player);
+  return legalMoves(board, next).length > 0 ? next : player;
+}
+
+// The game is over once neither side can move.
+export function isGameOver(board: Board): boolean {
+  return legalMoves(board, BLACK).length === 0 && legalMoves(board, WHITE).length === 0;
 }
 
 // Apply a move, returning a new board. Throws if the move is illegal.

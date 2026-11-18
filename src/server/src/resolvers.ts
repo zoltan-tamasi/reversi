@@ -1,7 +1,8 @@
 import { GraphQLError } from 'graphql';
 import { PubSub } from 'graphql-subscriptions/dist/pubsub.js';
-import { legalMoves, scores } from './game/reversi.js';
-import type { Game } from './game/reversi.js';
+import { legalMoves, scores } from '@reversi/shared';
+import type { Game } from '@reversi/shared';
+import { gameTopic, streamGameEvents } from './gameEvents.js';
 import type { Player } from './gameStore.js';
 import * as store from './gameStore.js';
 import { createSession, deleteSession } from './sessionStore.js';
@@ -27,6 +28,11 @@ function requireUser({ userId }: Context): string {
     throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
   }
   return userId;
+}
+
+// Wakes the game's subscribers so they stream whatever was just recorded.
+function notifySubscribers({ pubsub }: Context, gameId: string): void {
+  pubsub.publish(gameTopic(gameId), {});
 }
 
 export const resolvers = {
@@ -61,30 +67,26 @@ export const resolvers = {
       _parent: unknown,
       _args: unknown,
       context: Context
-    ) : Game => {
-      const game = store.createGame(requireUser(context));
-      context.pubsub.publish(`JOIN_GAME_${game.id}`, { joinGame: { game } });
-      return game;
-    },
+    ) : Game => store.createGame(requireUser(context)),
 
     makeMove: (
       _parent: unknown,
       { gameId, row, col }: { gameId: string; row: number; col: number },
       context: Context
-    ): Game => {
-      const game = store.makeMove(gameId, requireUser(context), row, col);
-      context.pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game } });
-      return game;
+    ): boolean => {
+      store.makeMove(gameId, requireUser(context), row, col);
+      notifySubscribers(context, gameId);
+      return true;
     },
 
     passMove: (
       _parent: unknown,
       { gameId }: { gameId: string },
       context: Context
-    ): Game => {
-      const game = store.passMove(gameId, requireUser(context));
-      context.pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game } });
-      return game;
+    ): boolean => {
+      store.passMove(gameId, requireUser(context));
+      notifySubscribers(context, gameId);
+      return true;
     },
 
     sayHello: (
@@ -92,8 +94,8 @@ export const resolvers = {
       { gameId, message }: { gameId: string; message: string },
       context: Context
     ): boolean => {
-      const sender = store.getPlayer(requireUser(context))?.name ?? null;
-      context.pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game: store.getGame(gameId), message, sender } });
+      store.addMessage(gameId, requireUser(context), message);
+      notifySubscribers(context, gameId);
       return true;
     },
 
@@ -103,7 +105,7 @@ export const resolvers = {
       context: Context
     ): boolean => {
       store.joinGame(gameId, requireUser(context));
-      context.pubsub.publish(`JOIN_GAME_${gameId}`, { joinGame: { game: store.getGame(gameId) } });
+      notifySubscribers(context, gameId);
       return true;
     },
 
@@ -123,14 +125,14 @@ export const resolvers = {
 
   Subscription: {
     joinGame: {
-      subscribe: (_parent: unknown, { gameId }: { gameId: string }, context: Context): any => {
+      subscribe: (_parent: unknown, { gameId, afterSeq }: { gameId: string; afterSeq: number }, context: Context): any => {
         requireUser(context);
         const game = store.getGame(gameId);
         if (!game) {
           throw new Error(`Game with ID ${gameId} not found`);
         }
         console.log(context.pubsub);
-        return context.pubsub.asyncIterableIterator(`JOIN_GAME_${gameId}`);
+        return streamGameEvents(context.pubsub, game, afterSeq);
       }
     }
   },

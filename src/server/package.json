@@ -9,12 +9,13 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "start": "node dist/index.js",
-    "test": "node --import tsx --test src/game/reversi.test.ts src/game/gameStore.test.ts",
-    "test:all": "node --import tsx --test src/game/reversi.test.ts src/game/gameStore.test.ts"
+    "test": "node --import tsx --test src/game/gameStore.test.ts src/game/gameEvents.test.ts",
+    "test:all": "node --import tsx --test src/game/gameStore.test.ts src/game/gameEvents.test.ts"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
     "@graphql-tools/schema": "^10.1.0",
+    "@reversi/shared": "*",
     "@types/ws": "^8.18.1",
     "express": "^5.2.1",
     "graphql": "^16.9.0",

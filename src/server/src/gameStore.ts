@@ -6,12 +6,13 @@ import {
   BLACK,
   WHITE,
   applyMove,
+  isGameOver,
   createBoard,
   legalMoves,
-  opponent,
+  nextTurn,
   winner
-} from './game/reversi.js';
-import type { Game, Player as Color } from './game/reversi.js';
+} from '@reversi/shared';
+import type { EventTypes, Game, Player as Color } from '@reversi/shared';
 import { ErrorType } from './resolvers.js';
 
 export type Player = {
@@ -80,6 +81,7 @@ export function createGame(userId: string): Game {
   games.set(game.id, game);
   // Whoever creates a game always plays black.
   assignToGame(userId, game.id, BLACK);
+  recordEvent(game, userId, { type: 'JOIN', player: BLACK });
   return game;
 }
 
@@ -91,14 +93,38 @@ export function getGame(id: string): Game | null {
 // joining after that (or either player rejoining) just observes.
 export function joinGame(id: string, playerId: string): Game {
   const game = requireGame(id);
-  if (game.status === 'WAITING_FOR_PLAYERS' && playerId !== game.blackPlayer) {
+  const starting = game.status === 'WAITING_FOR_PLAYERS' && playerId !== game.blackPlayer;
+  if (starting) {
     game.whitePlayer = playerId;
     game.status = 'IN_PROGRESS';
     console.log(`Game ${id} started: black=${game.blackPlayer}, white=${game.whitePlayer}`);
   }
-  const color = playerId === game.blackPlayer ? BLACK : playerId === game.whitePlayer ? WHITE : null;
+  const color = seatColor(game, playerId);
   assignToGame(playerId, id, color);
+  recordEvent(game, playerId, { type: 'JOIN', player: color });
+  if (starting) {
+    recordEvent(game, playerId, { type: 'START' });
+  }
   return game;
+}
+
+export function addMessage(id: string, playerId: string, message: string): Game {
+  const game = requireGame(id);
+  recordEvent(game, playerId, {
+    type: 'MESSAGE',
+    player: seatColor(game, playerId),
+    senderName: players.get(playerId)?.name ?? null,
+    message
+  });
+  return game;
+}
+
+function seatColor(game: Game, playerId: string): Color | null {
+  return playerId === game.blackPlayer ? BLACK : playerId === game.whitePlayer ? WHITE : null;
+}
+
+function recordEvent(game: Game, initiatedBy: string, event: EventTypes): void {
+  game.events.push({ ...event, seq: game.events.length, timestamp: Date.now(), initiatedBy });
 }
 
 // Detaches the player from their current game so a restored session no
@@ -119,8 +145,10 @@ function assignToGame(playerId: string, gameId: string | null, color: Color | nu
 export function makeMove(id: string, playerId: string, row: number, col: number): Game {
   const game = requireGame(id);
   requireTurn(game, playerId);
-  game.board = applyMove(game.board, row, col, game.playerToTakeNextMove);
-  advanceTurn(game);
+  const player = game.playerToTakeNextMove;
+  game.board = applyMove(game.board, row, col, player);
+  recordEvent(game, playerId, { type: 'MOVE', player, row, col });
+  advanceTurn(game, playerId);
   return game;
 }
 
@@ -130,7 +158,8 @@ export function passMove(id: string, playerId: string): Game {
   if (legalMoves(game.board, game.playerToTakeNextMove).length > 0) {
     throw new Error('Cannot pass while a legal move is available');
   }
-  advanceTurn(game);
+  recordEvent(game, playerId, { type: 'PASS', player: game.playerToTakeNextMove });
+  advanceTurn(game, playerId);
   return game;
 }
 
@@ -152,14 +181,12 @@ function requireTurn(game: Game, playerId: string): void {
   }
 }
 
-function advanceTurn(game: Game): void {
-  const next = opponent(game.playerToTakeNextMove);
-  if (legalMoves(game.board, next).length > 0) {
-    game.playerToTakeNextMove = next;
-  } else if (legalMoves(game.board, game.playerToTakeNextMove).length === 0) {
-    // Neither side can move, so the game is over.
+function advanceTurn(game: Game, playerId: string): void {
+  game.playerToTakeNextMove = nextTurn(game.board, game.playerToTakeNextMove);
+  if (isGameOver(game.board)) {
     game.status = 'FINISHED';
     game.winner = winner(game.board);
+    recordEvent(game, playerId, { type: 'END', winner: game.winner });
   }
 }
 

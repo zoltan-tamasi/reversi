@@ -1,4 +1,7 @@
 import { gql } from '@apollo/client';
+import type { GameEvent } from '@reversi/shared';
+
+export type { GameEvent };
 
 export type Disc = 'EMPTY' | 'BLACK' | 'WHITE';
 export type GameStatus = 'WAITING_FOR_PLAYERS' | 'IN_PROGRESS' | 'FINISHED';
@@ -25,6 +28,11 @@ export type Game = {
   winner: Disc | null;
 };
 
+export type ChatMessage = {
+  sender: string | null;
+  text: string;
+};
+
 export type Player = {
   id: string;
   name: string;
@@ -36,43 +44,40 @@ export type UserSession = {
   color: Disc | null;
 };
 
-// Shared fragment so every query/mutation returns a consistent game shape.
-export const GAME_FIELDS = gql`
-  fragment GameFields on Game {
-    id
-    board
-    playerToTakeNextMove
-    blackPlayer
-    whitePlayer
-    legalMoves {
-      row
-      col
-    }
-    scores {
-      black
-      white
-    }
-    status
+// Shared fragment so the query and the subscription return the same event shape.
+export const GAME_EVENT_FIELDS = gql`
+  fragment GameEventFields on GameEvent {
+    seq
+    type
+    player
+    row
+    col
+    message
+    senderName
     winner
+    timestamp
+    initiatedBy
   }
 `;
 
 export const GET_GAME = gql`
   query GetGame($id: ID!) {
     game(id: $id) {
-      ...GameFields
+      id
+      events {
+        ...GameEventFields
+      }
     }
   }
-  ${GAME_FIELDS}
+  ${GAME_EVENT_FIELDS}
 `;
 
 export const NEW_GAME = gql`
   mutation NewGame {
     newGame {
-      ...GameFields
+      id
     }
   }
-  ${GAME_FIELDS}
 `;
 
 export const RESTORE_USER_SESSION = gql`
@@ -103,33 +108,23 @@ export const REGISTER_PLAYER = gql`
 
 export const MAKE_MOVE = gql`
   mutation MakeMove($gameId: ID!, $row: Int!, $col: Int!) {
-    makeMove(gameId: $gameId, row: $row, col: $col) {
-      ...GameFields
-    }
+    makeMove(gameId: $gameId, row: $row, col: $col)
   }
-  ${GAME_FIELDS}
 `;
 
 export const PASS_MOVE = gql`
   mutation PassMove($gameId: ID!) {
-    passMove(gameId: $gameId) {
-      ...GameFields
-    }
+    passMove(gameId: $gameId)
   }
-  ${GAME_FIELDS}
 `;
 
 export const JOIN_GAME = gql`
-  subscription JoinGame($gameId: ID!) {
-    joinGame(gameId: $gameId) {
-      game {  
-        ...GameFields
-      }
-      message
-      sender
-    } 
+  subscription JoinGame($gameId: ID!, $afterSeq: Int!) {
+    joinGame(gameId: $gameId, afterSeq: $afterSeq) {
+      ...GameEventFields
+    }
   }
-  ${GAME_FIELDS}
+  ${GAME_EVENT_FIELDS}
 `;
 
 export const SAY_HELLO = gql`
